@@ -5,10 +5,10 @@ import PySimpleGUI as sg
 from DatabaseManager import DatabaseManager
 
 HOSTNAME = 'localhost'
-DATABASE = 'postgres'
-USERNAME = 'postgres'
-PASSWORD = 'anita1'
-OPTIONS = '-c search_path=dbo,drogeria'
+DATABASE = 'cookbook'
+USERNAME = 'cookbook'
+PASSWORD = '2025'
+OPTIONS = '-c search_path=public,dbo,drogeria'
 
 def stworz_okno(tytul: str, layout: list) -> sg.Window:
     sg.theme('DarkRed')
@@ -17,9 +17,9 @@ def stworz_okno(tytul: str, layout: list) -> sg.Window:
 def zaloguj():
     layout = [
         [sg.Text('Logowanie')],
-        [sg.Text('Login', size =(15, 1)), sg.InputText()],
+        [sg.Text('Email', size =(15, 1)), sg.InputText()],
         [sg.Text('Hasło', size =(15, 1)), sg.InputText()],
-        [sg.Submit(button_text='Zaloguj')]
+        [sg.Submit(button_text='Zaloguj'),  sg.Button(button_text='Stwórz konto')],
     ]
     window = stworz_okno('LOGOWANIE', layout)
     databaseManager = DatabaseManager(HOSTNAME, DATABASE, USERNAME, PASSWORD, OPTIONS)
@@ -37,6 +37,37 @@ def zaloguj():
                 window.close()
                 return show_menu(databaseManager, user)
 
+        if event == "Stwórz konto":
+            window.close()
+            return otworz_okno_rejestracji(databaseManager)
+def otworz_okno_rejestracji(databaseManager: DatabaseManager):
+    layout = [
+        [sg.Text('Podaj dane rejestracji')],
+        [sg.Text('Imię', size=(15,1)), sg.InputText()],
+        [sg.Text('Nazwisko', size=(15,1)), sg.InputText()],
+        [sg.Text('Email', size=(15, 1)), sg.InputText()],
+        [sg.Text('Hasło', size=(15, 1)), sg.InputText()],
+        [sg.Submit(button_text='Zarejestruj się')]
+    ]
+    window = stworz_okno('REJESTRACJA', layout)
+    while True:
+        event, values = window.read()
+        if event == sg.WIN_CLOSED:
+            window.close()
+            break
+        if event == "Zarejestruj się":
+            if '' in values.values():
+                sg.popup('Proszę wprowadzić pełne dane!')
+            elif databaseManager.znajdz_uzytkownika(values[2], '%') is not None:
+                sg.popup('Użytkownik o takim adresie Email już istnieje!')
+            elif values[2].count('@') != 1:
+                sg.popup('Proszę wprowadzić poprawny adres Email!')
+            else:
+                databaseManager.dodaj_uzytkownika(values[0], values[1], values[2], values[3])
+                user = databaseManager.znajdz_uzytkownika(values[2], values[3])
+                window.close()
+                # tymczasowo, trzeba zmienić menu
+                return show_menu(databaseManager, user)
 def show_menu(databaseManager: DatabaseManager, user: tuple):
     layout = [
         [sg.Text('Wybierz operację')],

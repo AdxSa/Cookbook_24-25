@@ -2,7 +2,7 @@ import psycopg2
 
 class DatabaseManager:
     def __init__(self, hostname, database, username, password, options):
-        self.credentials = {'host': hostname, 'database': database, 'user': username, 'password': password, 'options':options}
+        self.credentials = {"host": hostname, "dbname": database, "user": username, "password": password, "options":options}
 
     def fetchone(self, query: str, arguments: tuple):
         with psycopg2.connect(**self.credentials) as con:
@@ -21,9 +21,11 @@ class DatabaseManager:
             with con.cursor() as curs:
                 curs.execute(query, arguments)
 
-    def znajdz_uzytkownika(self, login: str, haslo: str):
-        return self.fetchone(f"SELECT * FROM uzytkownicy WHERE login=%s AND haslo=%s;", (login, haslo))
-    
+    # def znajdz_uzytkownika(self, login: str, haslo: str):
+    #     return self.fetchone(f"SELECT * FROM uzytkownicy WHERE login=%s AND haslo=%s;", (login, haslo))
+    def znajdz_uzytkownika(self, email: str, haslo: str):
+        return self.fetchone(f"SELECT * FROM uzytkownicy WHERE email=%s AND haslo LIKE %s;", (email, haslo))
+
     def ilosc_produktu(self, id_produktu: int)-> int:
         aktualny_stan = 0
         stan_magazynowy = self.fetchall(f'SELECT SUM(ilosc) AS sprzedane, typ FROM stan_magazynowy WHERE id_produktu=%s GROUP BY typ;', (id_produktu,))
@@ -35,8 +37,8 @@ class DatabaseManager:
 
         return aktualny_stan
     
-    def dodaj_uzytkownika(self, login: str, haslo: str, stanowisko: str):
-        self.wykonaj_query(f"INSERT INTO uzytkownicy(login, haslo, stanowisko) VALUES (%s, %s, %s);", (login, haslo, stanowisko))
+    def dodaj_uzytkownika(self, imie: str, nazwisko: str, email: str, haslo: str):
+        self.wykonaj_query(f"INSERT INTO uzytkownicy(imie, nazwisko, haslo, email) VALUES (%s, %s, %s, %s);", (imie, nazwisko ,haslo, email))
     
     def przyjmij_dostawe(self, id_produktu: int, ilosc: int):
         self.wykonaj_query(f"INSERT INTO stan_magazynowy (ilosc, typ, id_produktu) VALUES (%s, %s, %s);", (ilosc, "przyjecie", id_produktu))

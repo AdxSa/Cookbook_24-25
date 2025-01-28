@@ -91,3 +91,5 @@ $$ LANGUAGE plpgsql;
 
 CREATE TRIGGER sprawdz_produkt_trigger BEFORE INSERT OR UPDATE ON sprzedaz_produktu
 	FOR EACH ROW EXECUTE PROCEDURE sprawdz_produkt();
+
+insert into uzytkownicy (login, haslo, stanowisko) values ('misio', 'tester', 'sprzedawca');
