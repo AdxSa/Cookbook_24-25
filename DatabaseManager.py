@@ -26,6 +26,7 @@ class DatabaseManager:
     def znajdz_uzytkownika(self, email: str, haslo: str):
         return self.fetchone(f"SELECT * FROM uzytkownicy WHERE email=%s AND haslo LIKE %s;", (email, haslo))
 
+
     def ilosc_produktu(self, id_produktu: int)-> int:
         aktualny_stan = 0
         stan_magazynowy = self.fetchall(f'SELECT SUM(ilosc) AS sprzedane, typ FROM stan_magazynowy WHERE id_produktu=%s GROUP BY typ;', (id_produktu,))

@@ -14,6 +14,7 @@ def stworz_okno(tytul: str, layout: list) -> sg.Window:
     sg.theme('DarkRed')
     return sg.Window(tytul, layout)
 
+
 def zaloguj():
     layout = [
         [sg.Text('Logowanie')],
