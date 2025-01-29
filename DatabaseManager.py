@@ -39,9 +39,34 @@ class DatabaseManager:
     
     def dodaj_uzytkownika(self, imie: str, nazwisko: str, email: str, haslo: str):
         self.wykonaj_query(f"INSERT INTO uzytkownicy(imie, nazwisko, haslo, email) VALUES (%s, %s, %s, %s);", (imie, nazwisko ,haslo, email))
-    
+
     def przyjmij_dostawe(self, id_produktu: int, ilosc: int):
         self.wykonaj_query(f"INSERT INTO stan_magazynowy (ilosc, typ, id_produktu) VALUES (%s, %s, %s);", (ilosc, "przyjecie", id_produktu))
+
+    def wypisz_wszystkie_skladniki(self):
+        return self.fetchall(f"SELECT ID_skladnika, nazwa_skladnika FROM skladniki;", 1)
+
+    def wypisz_skladniki(self, id_magazynu):
+        return self.fetchall(f"SELECT ID_skladnika, ILOSC FROM skladniki_w_magazynie WHERE ID_magazynu = %s;", (id_magazynu,))
+
+    def podaj_ilosc_skladnikow(self, id_magazynu: int, id_skladnika: int):
+        return self.fetchone(f"SELECT ILOSC FROM skladniki_w_magazynie WHERE ID_magazynu = %s AND ID_skladnika = %s;", (id_magazynu, id_skladnika))
+
+    def zmien_ilosc_skladnika(self, id_magazynu: int, id_skladnika: int, ilosc_do_dodania: float, dodaj: bool):
+        quantity = self.fetchone(f"SELECT ILOSC FROM skladniki_w_magazynie WHERE ID_magazynu = %s AND ID_skladnika = %s;", (id_magazynu, id_skladnika))
+        quantity = float(quantity[0])
+        if dodaj == True:
+            quantity += ilosc_do_dodania
+            self.wykonaj_query(f"UPDATE skladniki_w_magazynie SET ILOSC = %s WHERE ID_magazynu = %s AND ID_skladnika = %s;", (quantity, id_magazynu, id_skladnika))
+        elif quantity - ilosc_do_dodania >= 0:
+            quantity -= ilosc_do_dodania
+            self.wykonaj_query(f"UPDATE skladniki_w_magazynie SET ILOSC = %s WHERE ID_magazynu = %s AND ID_skladnika = %s;", (quantity, id_magazynu, id_skladnika))
+
+    def dodaj_skladnik_do_magazynu(self, id_magazynu: int, id_skladnika: int):
+        self.wykonaj_query(f"INSERT INTO skladniki_w_magazynie (ID_magazynu, ID_skladnika, Ilosc) VALUES (%s, %s, 0);", (id_magazynu, id_skladnika))
+
+    def czy_mialem_taki_skladnik(self, id_skladnika: int, id_magazynu: int):
+        return self.fetchone(f"SELECT * FROM skladniki_w_magazynie WHERE ID_magazynu = %s AND ID_skladnika = %s", (id_magazynu, id_skladnika))
 
     def rozpoczecie_sprzedazy(self, id_uzytkownika: int)-> int:
         sprzedaz = self.fetchone(f"INSERT INTO sprzedaz (data, status, id_uzytkownika) VALUES (current_timestamp, 'w trakcie', %s) RETURNING id_sprzedazy", (id_uzytkownika,))
