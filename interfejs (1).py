@@ -3,6 +3,7 @@ import decimal as dec
 from tkinter import N
 import PySimpleGUI as sg
 from DatabaseManager import DatabaseManager
+
 HOSTNAME = 'localhost'
 DATABASE = 'cookbook'
 USERNAME = 'cookbook'
@@ -12,6 +13,7 @@ OPTIONS = '-c search_path=public,dbo,drogeria'
 def stworz_okno(tytul: str, layout: list) -> sg.Window:
     sg.theme('DarkRed')
     return sg.Window(tytul, layout)
+
 def zaloguj():
     layout = [
         [sg.Text('Logowanie')],
@@ -69,8 +71,8 @@ def otworz_okno_rejestracji(databaseManager: DatabaseManager):
 def show_menu(databaseManager: DatabaseManager, user: tuple):
     layout = [
         [sg.Text('Wybierz operację')],
-        [sg.Button('Przyjmij dostawę')],
-        [sg.Button('Sprzedaż')],
+        [sg.Button('Otwórz magazyn')],
+        [sg.Button('Kalkulator jednostek')],
         [sg.Button('Zobacz przepisy')],
         [sg.CloseButton(button_text='Wyjście')]
     ]
@@ -83,17 +85,69 @@ def show_menu(databaseManager: DatabaseManager, user: tuple):
         if event in (sg.WIN_CLOSED, 'Wyjście'):
             break
         if event == 'Zobacz przepisy':
-            Zobacz_przepisy(databaseManager)
+            Zobacz_przepisy(databaseManager, user)
         if event == 'Dodaj użytkownika':
             dodaj_uzytkownika(databaseManager)
-        if event == 'Przyjmij dostawę':
+        if event == 'Otwórz magazyn':
             przyjecie_dostawy(databaseManager)
-        if event == 'Sprzedaż':
-            sprzedaz(databaseManager, user[0])
+        if event == 'Kalkulator jednostek':
+            otworz_kalkulator(databaseManager)
 
     window.close()
-    
-def Zobacz_przepisy(databaseManager: DatabaseManager):
+
+def otworz_kalkulator(databaseManager: DatabaseManager):
+    skladniki = databaseManager.wypisz_wszystkie_skladniki()
+    print(skladniki)
+    skladniki_dict = {str(id): nazwa for id, nazwa in skladniki}
+    layout = [
+        [sg.Text('Wybierz składnik'), sg.Combo(list(skladniki_dict.values()), key="SKŁADNIK", enable_events=True)],
+        [sg.Text("Jednostka 1:"), sg.Combo([], key="JEDNOSTKA 1", enable_events=True)],
+        [sg.Text("Jednostka 2:"), sg.Combo([], key="JEDNOSTKA 2", enable_events=True)],
+        [sg.Text("Proporcja:"), sg.Text("", key="PROPORCJA", size=(50, 1))],
+        [sg.Button("Oblicz"), sg.Button("Zamknij")]
+              ]
+    window = stworz_okno("Kalkulator przeliczania jednostek", layout)
+    wybrany_skladnik_id = None
+
+    while True:
+        event, values = window.read()
+
+        if event in (sg.WINDOW_CLOSED, "Zamknij"):
+            break
+
+        # Gdy użytkownik wybierze składnik
+        if event == "SKŁADNIK":
+            wybrany_skladnik_nazwa = values["SKŁADNIK"]
+            wybrany_skladnik_id = next(
+                (id for id, name in skladniki_dict.items() if name == wybrany_skladnik_nazwa), None)
+
+            if wybrany_skladnik_id:
+                dostepne_jednostki = databaseManager.wypisz_jednostki_dla_skladnika(wybrany_skladnik_id)
+                window["JEDNOSTKA 1"].update(values=dostepne_jednostki, value="")
+                window["JEDNOSTKA 2"].update(values=dostepne_jednostki, value="")
+                window["PROPORCJA"].update("")
+
+        # Gdy użytkownik wybierze jednostki i kliknie "Oblicz"
+        if event == "Oblicz":
+            unit1 = values["JEDNOSTKA 1"]
+            unit2 = values["JEDNOSTKA 2"]
+
+            if wybrany_skladnik_id and unit1 and unit2:
+                ratio = databaseManager.znajdz_przelicznik_jednostek(wybrany_skladnik_id, unit1, unit2)
+                if ratio:
+                    ratio = ratio[0]
+                    window["PROPORCJA"].update(f"{round(float(ratio), 5)}")
+                else:
+                    ratio = databaseManager.znajdz_przelicznik_jednostek(wybrany_skladnik_id, unit2, unit1)
+                    if ratio:
+                        ratio = ratio[0]
+                        window["PROPORCJA"].update(f"{round(float(1/ratio), 5)}")
+                    else:
+                        window["PROPORCJA"].update("Brak danych")
+
+    window.close()
+
+def Zobacz_przepisy(databaseManager: DatabaseManager, user):
     przepisy = databaseManager.get_all_recipes()
     layout = [[sg.Text('Kategorie')], [sg.Button('Wszystkie'), sg.Button('Dania glowne'), sg.Button('Zupy'), sg.Button('Desery')]]
     for recipe in przepisy:
@@ -114,12 +168,12 @@ def Zobacz_przepisy(databaseManager: DatabaseManager):
             break
 
         if event.isdigit():
-            pokaz_kroki(databaseManager, event)
+            pokaz_kroki(databaseManager, event, user)
 
 
     window.close()
 
-def pokaz_kroki(databaseManager: DatabaseManager, id_przepisu):
+def pokaz_kroki(databaseManager: DatabaseManager, id_przepisu, user):
     kroki_przepisu = databaseManager.otrzymaj_kroki_przepisu(id_przepisu)
     skladniki = databaseManager.otrzymaj_skladniki_przepisu(id_przepisu)
     imie, nazwisko, email = databaseManager.dane_autora_przepisu(id_przepisu)
@@ -132,7 +186,7 @@ def pokaz_kroki(databaseManager: DatabaseManager, id_przepisu):
     for krok in kroki_przepisu:
         kolejnosc, opis = krok
         layout.append([sg.Text(f"{kolejnosc} | {opis}", size=(100, 1))])
-    layout.append([sg.CloseButton(button_text='Wyjście')])
+    layout.append([sg.CloseButton(button_text='Wyjście'), sg.CloseButton(button_text='Odejmij składniki')])
     window = stworz_okno(f"Przepis na pyszne jedzonko", layout)
 
     while True:
@@ -140,6 +194,40 @@ def pokaz_kroki(databaseManager: DatabaseManager, id_przepisu):
 
         if event in (sg.WIN_CLOSED, 'Wyjście'):
             break
+
+
+        if event in (sg.WIN_CLOSED, 'Odejmij składniki'):
+            str_list = []
+            skladniki_list = [(int(skladnik[0]), float(skladnik[1])) for skladnik in skladniki]
+            # dodać przeliczanie na jednostki domyślne
+            print(skladniki_list)
+            magazyny = databaseManager.znajdz_moje_magazyny(user[0])
+            for magazyn in magazyny:
+                stan_magazynu = databaseManager.wypisz_skladniki(magazyn[0])
+                stan_magazynu = [(int(skladnik[0]), float(skladnik[1])) for skladnik in stan_magazynu]
+                magazyn_dict = dict(stan_magazynu)
+
+                czy_starczy = True
+
+                for id_skladnika, ilosc_w_przepisie in skladniki_list:
+                    ilosc_w_magazynie = magazyn_dict.get(id_skladnika, 0)  # Jeśli brak w magazynie, domyślnie 0
+
+                    if ilosc_w_magazynie < ilosc_w_przepisie:
+                        czy_starczy = False
+                        str_list.append(str(f"Brak wystarczającej ilości składnika {str(databaseManager.dopasuj_skladnik_do_id(id_skladnika)[0])}: {ilosc_w_magazynie}/{ilosc_w_przepisie}n"))
+                        sg.popup(f"Brak wystarczającej ilości składnika {str(databaseManager.dopasuj_skladnik_do_id(id_skladnika)[0])}: {ilosc_w_magazynie}/{ilosc_w_przepisie}")
+
+                print("Stan magazynu przed:")
+                print(databaseManager.wypisz_skladniki(magazyn[0]))
+                for skladnik in skladniki_list:
+                    databaseManager.zmien_ilosc_skladnika(magazyn[0], skladnik[0], skladnik[1], False)
+                print("Stan magazynu po:")
+                print(databaseManager.wypisz_skladniki(magazyn[0]))
+
+
+
+
+
 
     window.close()
 
@@ -168,7 +256,7 @@ def dodaj_uzytkownika(databaseManager: DatabaseManager):
     
     window.close()
 
-def obsluga_magazynu(databaseManager, id_magazynu):
+def obsluga_magazynu(databaseManager, id_magazynu, user):
     skladniki = databaseManager.wypisz_skladniki(id_magazynu)
     wszystkie_skladniki = databaseManager.wypisz_wszystkie_skladniki()  
 
@@ -257,8 +345,11 @@ def obsluga_magazynu(databaseManager, id_magazynu):
 
 
 
-def przyjecie_dostawy(databaseManager):
+def przyjecie_dostawy(databaseManager, user):
+    # moje_magazyny = databaseManager.znajdz_moje_magazyny(user[0])
+    # print(moje_magazyny)
     layout = [
+        # [sg.Text('Moje magazyny: ', size=(15, 1)), sg.Button('Dodaj magazyn')],
         [sg.Text('Numer magazynu:', size=(15, 1)), sg.InputText(key='MAGAZYN')],
         [sg.Button('Wyślij'), sg.Button('Cofnij')]
     ]
@@ -269,8 +360,16 @@ def przyjecie_dostawy(databaseManager):
         if event in (sg.WINDOW_CLOSED, 'Cofnij'):
             break
         
+        # if event == 'Dodaj magazyn':
+        #     if databaseManager.znajdz_moje_magazyny(user[0]) == []:
+        #         databaseManager.dodaj_magazyn(user[0])
+        #     if len(databaseManager.znajdz_moje_magazyny(user[0])) < 5:
+        #         databaseManager.dodaj_magazyn(user[0])
+        #     else:
+        #         sg.popup("Masz już maksymalną możliwą liczbę magazynów")
+
         if event == 'Wyślij':
-            obsluga_magazynu(databaseManager, int(values['MAGAZYN']))
+            obsluga_magazynu(databaseManager, int(values['MAGAZYN']), user)
 
     window.close()
 
