@@ -109,7 +109,7 @@ def Zobacz_przepisy(databaseManager: DatabaseManager):
     layout.append([sg.CloseButton(button_text='Wyjście')])
     window = stworz_okno('PRZEPISY', layout)
 
-        while True:
+    while True:
         event, _ = window.read()
 
         if event in (sg.WIN_CLOSED, 'Wyjście'):
