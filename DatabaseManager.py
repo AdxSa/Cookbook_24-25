@@ -65,8 +65,17 @@ class DatabaseManager:
     def dodaj_skladnik_do_magazynu(self, id_magazynu: int, id_skladnika: int):
         self.wykonaj_query(f"INSERT INTO skladniki_w_magazynie (ID_magazynu, ID_skladnika, Ilosc) VALUES (%s, %s, 0);", (id_magazynu, id_skladnika))
 
+    def dodaj_magazyn(self, id_uzytkownika: int):
+        self.wykonaj_query(f"INSERT INTO Magazyn (ID_uzytkownika) VALUES (%s)", (id_uzytkownika, ))
+
     def czy_mialem_taki_skladnik(self, id_skladnika: int, id_magazynu: int):
         return self.fetchone(f"SELECT * FROM skladniki_w_magazynie WHERE ID_magazynu = %s AND ID_skladnika = %s", (id_magazynu, id_skladnika))
+
+    def znajdz_moje_magazyny(self, id_uzytkownika: int):
+        return self.fetchall(f"SELECT ID_magazynu FROM magazyn WHERE ID_uzytkownika = %s", (id_uzytkownika, ))
+
+    def dopasuj_skladnik_do_id(self, id_skladnika: int):
+        return self.fetchone(f"SELECT nazwa_skladnika FROM SKLADNIKI WHERE ID_skladnika = %s", (id_skladnika, ))
 
     def rozpoczecie_sprzedazy(self, id_uzytkownika: int)-> int:
         sprzedaz = self.fetchone(f"INSERT INTO sprzedaz (data, status, id_uzytkownika) VALUES (current_timestamp, 'w trakcie', %s) RETURNING id_sprzedazy", (id_uzytkownika,))

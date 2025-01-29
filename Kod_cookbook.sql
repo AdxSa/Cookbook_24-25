@@ -27,7 +27,7 @@ CREATE TABLE Skladniki (
 
 -- Tworzenie tabeli magazynów
 CREATE TABLE Magazyn (
-    ID_magazynu INTEGER PRIMARY KEY,
+    ID_magazynu INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     ID_uzytkownika INTEGER NOT NULL,
     FOREIGN KEY (ID_uzytkownika) REFERENCES Uzytkownicy(ID_uzytkownika)
 );
@@ -117,9 +117,9 @@ INSERT INTO Skladniki (ID_skladnika, Nazwa_skladnika, Typ, Opis_skladnika) VALUE
 
 -- Magazyn
 INSERT INTO Magazyn (ID_magazynu, ID_uzytkownika) VALUES
-(1, 1),
-(2, 2),
-(3, 3);
+(1),
+(2),
+(3);
 
 -- Skladniki w magazynie
 INSERT INTO Skladniki_w_magazynie (ID_magazynu, ID_skladnika, Ilosc) VALUES
