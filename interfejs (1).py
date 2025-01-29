@@ -71,8 +71,8 @@ def otworz_okno_rejestracji(databaseManager: DatabaseManager):
 def show_menu(databaseManager: DatabaseManager, user: tuple):
     layout = [
         [sg.Text('Wybierz operację')],
-        [sg.Button('Przyjmij dostawę')],
-        [sg.Button('Sprzedaż')],
+        [sg.Button('Otwórz magazyn')],
+        [sg.Button('Kalkulator jednostek')],
         [sg.Button('Zobacz przepisy')],
         [sg.CloseButton(button_text='Wyjście')]
     ]
@@ -88,13 +88,65 @@ def show_menu(databaseManager: DatabaseManager, user: tuple):
             Zobacz_przepisy(databaseManager, user)
         if event == 'Dodaj użytkownika':
             dodaj_uzytkownika(databaseManager)
-        if event == 'Przyjmij dostawę':
-            przyjecie_dostawy(databaseManager, user)
-        if event == 'Sprzedaż':
-            sprzedaz(databaseManager, user[0])
+        if event == 'Otwórz magazyn':
+            przyjecie_dostawy(databaseManager)
+        if event == 'Kalkulator jednostek':
+            otworz_kalkulator(databaseManager)
 
     window.close()
-    
+
+def otworz_kalkulator(databaseManager: DatabaseManager):
+    skladniki = databaseManager.wypisz_wszystkie_skladniki()
+    print(skladniki)
+    skladniki_dict = {str(id): nazwa for id, nazwa in skladniki}
+    layout = [
+        [sg.Text('Wybierz składnik'), sg.Combo(list(skladniki_dict.values()), key="SKŁADNIK", enable_events=True)],
+        [sg.Text("Jednostka 1:"), sg.Combo([], key="JEDNOSTKA 1", enable_events=True)],
+        [sg.Text("Jednostka 2:"), sg.Combo([], key="JEDNOSTKA 2", enable_events=True)],
+        [sg.Text("Proporcja:"), sg.Text("", key="PROPORCJA", size=(50, 1))],
+        [sg.Button("Oblicz"), sg.Button("Zamknij")]
+              ]
+    window = stworz_okno("Kalkulator przeliczania jednostek", layout)
+    wybrany_skladnik_id = None
+
+    while True:
+        event, values = window.read()
+
+        if event in (sg.WINDOW_CLOSED, "Zamknij"):
+            break
+
+        # Gdy użytkownik wybierze składnik
+        if event == "SKŁADNIK":
+            wybrany_skladnik_nazwa = values["SKŁADNIK"]
+            wybrany_skladnik_id = next(
+                (id for id, name in skladniki_dict.items() if name == wybrany_skladnik_nazwa), None)
+
+            if wybrany_skladnik_id:
+                dostepne_jednostki = databaseManager.wypisz_jednostki_dla_skladnika(wybrany_skladnik_id)
+                window["JEDNOSTKA 1"].update(values=dostepne_jednostki, value="")
+                window["JEDNOSTKA 2"].update(values=dostepne_jednostki, value="")
+                window["PROPORCJA"].update("")
+
+        # Gdy użytkownik wybierze jednostki i kliknie "Oblicz"
+        if event == "Oblicz":
+            unit1 = values["JEDNOSTKA 1"]
+            unit2 = values["JEDNOSTKA 2"]
+
+            if wybrany_skladnik_id and unit1 and unit2:
+                ratio = databaseManager.znajdz_przelicznik_jednostek(wybrany_skladnik_id, unit1, unit2)
+                if ratio:
+                    ratio = ratio[0]
+                    window["PROPORCJA"].update(f"{round(float(ratio), 5)}")
+                else:
+                    ratio = databaseManager.znajdz_przelicznik_jednostek(wybrany_skladnik_id, unit2, unit1)
+                    if ratio:
+                        ratio = ratio[0]
+                        window["PROPORCJA"].update(f"{round(float(1/ratio), 5)}")
+                    else:
+                        window["PROPORCJA"].update("Brak danych")
+
+    window.close()
+
 def Zobacz_przepisy(databaseManager: DatabaseManager, user):
     przepisy = databaseManager.get_all_recipes()
     layout = [[sg.Text('Kategorie')], [sg.Button('Wszystkie'), sg.Button('Dania glowne'), sg.Button('Zupy'), sg.Button('Desery')]]
@@ -154,16 +206,16 @@ def pokaz_kroki(databaseManager: DatabaseManager, id_przepisu, user):
                 stan_magazynu = databaseManager.wypisz_skladniki(magazyn[0])
                 stan_magazynu = [(int(skladnik[0]), float(skladnik[1])) for skladnik in stan_magazynu]
                 magazyn_dict = dict(stan_magazynu)
-                
+
                 czy_starczy = True
 
                 for id_skladnika, ilosc_w_przepisie in skladniki_list:
                     ilosc_w_magazynie = magazyn_dict.get(id_skladnika, 0)  # Jeśli brak w magazynie, domyślnie 0
-                    
+
                     if ilosc_w_magazynie < ilosc_w_przepisie:
                         czy_starczy = False
                         str_list.append(str(f"Brak wystarczającej ilości składnika {str(databaseManager.dopasuj_skladnik_do_id(id_skladnika)[0])}: {ilosc_w_magazynie}/{ilosc_w_przepisie}n"))
-                        sg.popup(f"Brak wystarczającej ilości składnika {str(databaseManager.dopasuj_skladnik_do_id(id_skladnika)[0])}: {ilosc_w_magazynie}/{ilosc_w_przepisie}")  
+                        sg.popup(f"Brak wystarczającej ilości składnika {str(databaseManager.dopasuj_skladnik_do_id(id_skladnika)[0])}: {ilosc_w_magazynie}/{ilosc_w_przepisie}")
 
                 print("Stan magazynu przed:")
                 print(databaseManager.wypisz_skladniki(magazyn[0]))
@@ -173,7 +225,7 @@ def pokaz_kroki(databaseManager: DatabaseManager, id_przepisu, user):
                 print(databaseManager.wypisz_skladniki(magazyn[0]))
 
 
-                    
+
 
 
 
