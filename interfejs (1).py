@@ -3,7 +3,6 @@ import decimal as dec
 from tkinter import N
 import PySimpleGUI as sg
 from DatabaseManager import DatabaseManager
-
 HOSTNAME = 'localhost'
 DATABASE = 'cookbook'
 USERNAME = 'cookbook'
@@ -72,7 +71,7 @@ def show_menu(databaseManager: DatabaseManager, user: tuple):
         [sg.Text('Wybierz operację')],
         [sg.Button('Przyjmij dostawę')],
         [sg.Button('Sprzedaż')],
-        [sg.Button('Sprawdź stan magazynowy')],
+        [sg.Button('Zobacz przepisy')],
         [sg.CloseButton(button_text='Wyjście')]
     ]
     if user[3] == 'kierownik':
@@ -83,8 +82,8 @@ def show_menu(databaseManager: DatabaseManager, user: tuple):
         event, values = window.read()
         if event in (sg.WIN_CLOSED, 'Wyjście'):
             break
-        if event == 'Sprawdź stan magazynowy':
-            sprawdz_stan_magazynowy(databaseManager)
+        if event == 'Zobacz przepisy':
+            Zobacz_przepisy(databaseManager)
         if event == 'Dodaj użytkownika':
             dodaj_uzytkownika(databaseManager)
         if event == 'Przyjmij dostawę':
@@ -94,25 +93,53 @@ def show_menu(databaseManager: DatabaseManager, user: tuple):
 
     window.close()
     
-def sprawdz_stan_magazynowy(databaseManager: DatabaseManager):
-    layout = [
-        [sg.Text('Stan magazynowy')],
-        [sg.Text('Kod kreskowy:', size =(15, 1)), sg.InputText()],
-        [sg.Submit(button_text='Wyślij'), sg.CloseButton(button_text='Wyjście')]
-    ]
-    window = stworz_okno('STAN MAGAZYWNOWY', layout)
+def Zobacz_przepisy(databaseManager: DatabaseManager):
+    przepisy = databaseManager.get_all_recipes()
+    layout = [[sg.Text('Kategorie')], [sg.Button('Wszystkie'), sg.Button('Dania glowne'), sg.Button('Zupy'), sg.Button('Desery')]]
+    for recipe in przepisy:
+        id_przepisu, nazwa, opis, czas, id_użytkownika = recipe
+        layout.append([
+            sg.Button(nazwa, key=str(id_przepisu), size=(20, 1)),  # Przycisk z nazwą przepisu
+            sg.Text(f"{opis} | Czas: {czas} min", size=(100, 1))  # Opis + czas przygotowania
+        ])
+
+
+    layout.append([sg.CloseButton(button_text='Wyjście')])
+    window = stworz_okno('PRZEPISY', layout)
 
     while True:
-        event, values = window.read()
+        event, _ = window.read()
+
         if event in (sg.WIN_CLOSED, 'Wyjście'):
             break
-        if values[0] != "":
-            produkt = databaseManager.znajdz_produkt(values[0])
-            if produkt is None:
-                sg.popup('Produkt nie istnieje!')
-            else:
-                ilosc = databaseManager.ilosc_produktu(produkt[0])
-                sg.popup(f'Jest {ilosc} sztuk')
+
+        if event.isdigit():
+            pokaz_kroki(databaseManager, event)
+
+
+    window.close()
+
+def pokaz_kroki(databaseManager: DatabaseManager, id_przepisu):
+    kroki_przepisu = databaseManager.otrzymaj_kroki_przepisu(id_przepisu)
+    skladniki = databaseManager.otrzymaj_skladniki_przepisu(id_przepisu)
+    imie, nazwisko, email = databaseManager.dane_autora_przepisu(id_przepisu)
+    layout = [[sg.Text(f"Przepis na pyszne jedzonko"), sg.Text("Autor:" + imie + " " + nazwisko), sg.Text("Email:" + " " + email)]]
+    layout.append([sg.Text(f"Na wykonanie tego przepisu będziesz potrzebował:")])
+    for skladnik in skladniki:
+        nazwa_skladnika, ilosc, nazwa_jednostki = skladnik[2], skladnik[1], skladnik[3]
+        layout.append([sg.Text(f"{ilosc} x {nazwa_skladnika} ({nazwa_jednostki})")])
+    layout.append([sg.Text(f"\n Kroki wykonania przepisu:")])
+    for krok in kroki_przepisu:
+        kolejnosc, opis = krok
+        layout.append([sg.Text(f"{kolejnosc} | {opis}", size=(100, 1))])
+    layout.append([sg.CloseButton(button_text='Wyjście')])
+    window = stworz_okno(f"Przepis na pyszne jedzonko", layout)
+
+    while True:
+        event, _ = window.read()
+
+        if event in (sg.WIN_CLOSED, 'Wyjście'):
+            break
 
     window.close()
 
