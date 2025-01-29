@@ -10,7 +10,7 @@ CREATE TABLE Uzytkownicy (
 -- Tworzenie tabeli przepisów
 CREATE TABLE Przepisy (
     ID_przepisu INTEGER PRIMARY KEY,
-    Nazwa_przepisu VARCHAR(255) NOT NULL,
+    Nazwa_przepisu VARCHAR(255) NOT NULL UNIQUE,
     Opis TEXT,
     Czas_przygotowania INTEGER,
     ID_uzytkownika INTEGER NOT NULL,
@@ -47,6 +47,7 @@ CREATE TABLE lista_skladnikow (
     ID_przepisu INTEGER NOT NULL,
     ID_skladnika INTEGER NOT NULL,
     Ilosc DECIMAL(10, 2) NOT NULL,
+    ID_jednostki INTEGER NOT NULL,
     PRIMARY KEY (ID_przepisu, ID_skladnika),
     FOREIGN KEY (ID_przepisu) REFERENCES Przepisy(ID_przepisu),
     FOREIGN KEY (ID_skladnika) REFERENCES Skladniki(ID_skladnika)
@@ -128,11 +129,11 @@ INSERT INTO Skladniki_w_magazynie (ID_magazynu, ID_skladnika, Ilosc) VALUES
 (3, 4, 10.0);
 
 -- Lista skladnikow
-INSERT INTO lista_skladnikow (ID_przepisu, ID_skladnika, Ilosc) VALUES
-(1, 1, 200), 
-(1, 2, 50),  
-(1, 3, 2),  
-(3, 4, 3);   
+INSERT INTO lista_skladnikow (ID_przepisu, ID_skladnika, Ilosc, ID_jednostki) VALUES
+(1, 1, 200, 1),
+(1, 2, 50, 1),
+(1, 3, 2, 2),
+(3, 4, 3, 2);
 
 -- Kategorie przepisow
 INSERT INTO Kategorie_przepisow (ID_kategorii, Nazwa_kategorii) VALUES
