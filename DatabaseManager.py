@@ -94,7 +94,7 @@ class DatabaseManager:
         self.wykonaj_query(f"UPDATE sprzedaz SET status = 'ukonczona' WHERE id_sprzedazy = %s;", (sprzedaz_id,))
         self.wykonaj_query(f"INSERT INTO stan_magazynowy (ilosc, id_produktu) SELECT ilosc, id_produktu FROM sprzedaz_produktu WHERE id_sprzedazy = %s;", (sprzedaz_id,))
 
-    
+
     def get_all_recipes(self):
         return self.fetchall(f"SELECT * FROM przepisy", 1)
 
@@ -103,6 +103,24 @@ class DatabaseManager:
 
     def otrzymaj_skladniki_przepisu(self, id_przepisu: int):
         return self.fetchall(f"SELECT ls.id_skladnika, ls.ilosc, s.nazwa_skladnika, nazwa_jednostki FROM lista_skladnikow ls JOIN skladniki s ON (ls.id_skladnika = s.id_skladnika) JOIN jednostki_miary jm USING (id_jednostki) WHERE ls.id_przepisu = %s", (id_przepisu, ))
-    
+
     def dane_autora_przepisu(self, id_przepisu: int):
         return self.fetchone(f"SELECT imie, nazwisko, email FROM uzytkownicy u JOIN przepisy p ON (u.id_uzytkownika=p.id_uzytkownika) WHERE p.id_przepisu = %s;", (id_przepisu, ))
+
+
+    def wypisz_jednostki_dla_skladnika(self, id_skladnika:int):
+        t1 = self.fetchall(f"SELECT u1.nazwa_jednostki, u2.nazwa_jednostki FROM przelicznik_miary p "
+                           f"JOIN jednostki_miary u1 ON p.id_jednostki_1 = u1.id_jednostki "
+                           f"JOIN jednostki_miary u2 ON p.id_jednostki_2 = u2.id_jednostki "
+                           f"WHERE p.id_skladnika = %s;", (id_skladnika, ))
+        jednostki = set()
+        for i, j in t1:
+            jednostki.add(i)
+            jednostki.add(j)
+        return list(jednostki)
+    def znajdz_przelicznik_jednostek(self, id_skladnika:int, nazwa1 :int, nazwa2:int):
+        return self.fetchone(f"SELECT proporcja FROM przelicznik_miary p "
+                             f"JOIN jednostki_miary u1 ON p.id_jednostki_1 = u1.id_jednostki "
+                             f"JOIN jednostki_miary u2 ON p.id_jednostki_2 = u2.id_jednostki "
+                             f"WHERE p.id_skladnika = %s AND "
+                             f"(u1.nazwa_jednostki = %s AND u2.nazwa_jednostki = %s);", (id_skladnika, nazwa1, nazwa2))
