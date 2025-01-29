@@ -168,28 +168,113 @@ def dodaj_uzytkownika(databaseManager: DatabaseManager):
     
     window.close()
 
-def przyjecie_dostawy(databaseManager: DatabaseManager):
+def obsluga_magazynu(databaseManager, id_magazynu):
+    skladniki = databaseManager.wypisz_skladniki(id_magazynu)
+    wszystkie_skladniki = databaseManager.wypisz_wszystkie_skladniki()  
+
+    ilosc_skladnika = dict(skladniki)
+
+    layout = []
+
+    for id_skladnika, nazwa_skladnika in wszystkie_skladniki:
+        ilosc = ilosc_skladnika.get(id_skladnika, 0) 
+
+        layout.append([
+            sg.Text(f'{nazwa_skladnika}', size=(20, 1)),
+            sg.Text(str(ilosc), size=(5, 1), key=f'ILOSC_{id_skladnika}'),
+            sg.Button('+', key=f'PLUS_{id_skladnika}'),
+            sg.Button('-', key=f'MINUS_{id_skladnika}')
+        ])
+
+    layout.append([sg.Button('Zamknij')])
+
+    window = sg.Window('Magazyn Składników', layout)
+
+    while True:
+        event, _ = window.read()
+
+        if event in (sg.WINDOW_CLOSED, 'Zamknij'):
+            break
+
+        for id_skladnika, _ in wszystkie_skladniki:
+            if event == f'PLUS_{id_skladnika}':
+                if databaseManager.czy_mialem_taki_skladnik(id_skladnika, id_magazynu) == None:
+                    databaseManager.dodaj_skladnik_do_magazynu(id_magazynu, id_skladnika)
+
+                layout_2 = [
+        [sg.Text('Ilość do dodania:', size=(15, 1)), sg.InputText(key='dodaj')],
+        [sg.Button('Dodaj')]
+    ]
+                new_window = stworz_okno('Dodawanie składników', layout_2)
+                while True:
+                    event, values = new_window.read()
+
+                    if event in (sg.WINDOW_CLOSED, 'Dodaj'):
+                        values['dodaj'] = float(values['dodaj'])
+                        if values['dodaj'] < 0:
+                            sg.popup(f'Jesteś w oknie dodawania produktów')
+                            break
+                        # można wywoływać jakieś exception itd
+                        databaseManager.zmien_ilosc_skladnika(id_magazynu, id_skladnika, values['dodaj'], True)
+                        break
+                new_window.close()
+
+            elif event == f'MINUS_{id_skladnika}':
+                if databaseManager.czy_mialem_taki_skladnik(id_skladnika, id_magazynu) == None:
+                    databaseManager.dodaj_skladnik_do_magazynu(id_magazynu, id_skladnika)
+                layout_2 = [
+            [sg.Text('Ilość do odjęcia:', size=(15, 1)), sg.InputText(key='dodaj')],
+            [sg.Button('Odejmij')]
+        ]
+                new_window = stworz_okno('Odejmowanie składników', layout_2)
+                while True:
+                    event, values = new_window.read()
+
+                    if event in (sg.WINDOW_CLOSED, 'Odejmij'):
+                        values['dodaj'] = float(values['dodaj'])
+                        if values['dodaj'] < 0:
+                            sg.popup(f'Jesteś w oknie odejmowania produktów')
+                            break
+                        # można wywoływać jakieś exception itd
+                        aktualna_ilosc = float(databaseManager.podaj_ilosc_skladnikow(id_magazynu, id_skladnika)[0])
+                    if aktualna_ilosc + values['dodaj'] < 0:
+                        sg.popup(f'Jest tylko {aktualna_ilosc} tego produktu')
+                        continue
+                    databaseManager.zmien_ilosc_skladnika(id_magazynu, id_skladnika, values['dodaj'], False)
+                    break
+                new_window.close()
+            
+            ilosc_skladnika = databaseManager.podaj_ilosc_skladnikow(id_magazynu, id_skladnika)
+
+            if ilosc_skladnika is None:
+                nowa_ilosc = 0  
+            else:
+                nowa_ilosc = float(ilosc_skladnika[0])  
+
+            window[f'ILOSC_{id_skladnika}'].update(str(nowa_ilosc))
+
+    window.close()
+
+
+
+def przyjecie_dostawy(databaseManager):
     layout = [
-        [sg.Text('Kod kreskowy:', size =(15, 1)), sg.InputText()],
-        [sg.Text('Ilość: ', size =(15, 1)), sg.InputText()],
-        [sg.Submit(button_text='Wyślij'), sg.CloseButton(button_text='Wyjście')]
+        [sg.Text('Numer magazynu:', size=(15, 1)), sg.InputText(key='MAGAZYN')],
+        [sg.Button('Wyślij'), sg.Button('Cofnij')]
     ]
     window = stworz_okno('DOSTAWA', layout)
 
     while True:
         event, values = window.read()
-        if event in (sg.WIN_CLOSED, 'Wyjście'):
+        if event in (sg.WINDOW_CLOSED, 'Cofnij'):
             break
-        if values[0] != "" and values[1] != "":
-            produkt = databaseManager.znajdz_produkt(values[0])
-            if produkt is None:
-               sg.popup('Produkt nie istnieje!')
-            else: 
-                databaseManager.przyjmij_dostawe(produkt[0], values[1])
-                ilosc = values[1]
-                sg.popup(f'Dodałem {ilosc} sztuk')
+        
+        if event == 'Wyślij':
+            obsluga_magazynu(databaseManager, int(values['MAGAZYN']))
 
     window.close()
+
+
 
 def sprzedaz(databaseManager: DatabaseManager, user_id: int):
     layout = [
