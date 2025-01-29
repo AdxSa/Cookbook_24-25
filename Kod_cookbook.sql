@@ -116,7 +116,7 @@ INSERT INTO Skladniki (ID_skladnika, Nazwa_skladnika, Typ, Opis_skladnika) VALUE
 (4, 'Pomidor', 'Warzywo', 'Podstawowy skladnik wielu zup i salatek.');
 
 -- Magazyn
-INSERT INTO Magazyn (ID_magazynu, ID_uzytkownika) VALUES
+INSERT INTO Magazyn (ID_uzytkownika) VALUES
 (1),
 (2),
 (3);
