@@ -172,6 +172,5 @@ SELECT u.ID_uzytkownika, u.Imie, u.Nazwisko, s.Nazwa_skladnika, sm.Ilosc, m.ID_m
 FROM Uzytkownicy u
 JOIN Magazyn m ON m.ID_uzytkownika = u.ID_uzytkownika
 JOIN Skladniki_w_magazynie sm ON sm.ID_magazynu = m.ID_magazynu
-JOIN Skladniki s ON sm.ID_skladnika = s.ID_skladnika
-WHERE u.ID_uzytkownika = %s;  -- Zamień na odpowiednie ID użytkownika
+JOIN Skladniki s ON sm.ID_skladnika = s.ID_skladnika;
 
