@@ -116,7 +116,7 @@ INSERT INTO Skladniki (ID_skladnika, Nazwa_skladnika, Typ, Opis_skladnika) VALUE
 (4, 'Pomidor', 'Warzywo', 'Podstawowy skladnik wielu zup i salatek.');
 
 -- Magazyn
-INSERT INTO Magazyn (ID_uzytkownika) VALUES
+INSERT INTO Magazyn (ID_magazynu, ID_uzytkownika) VALUES
 (1),
 (2),
 (3);
@@ -144,8 +144,8 @@ INSERT INTO Kategorie_przepisow (ID_kategorii, Nazwa_kategorii) VALUES
 -- Przepisy kategorie
 INSERT INTO Przepisy_kategorie (ID_przepisu, ID_kategorii) VALUES
 (1, 1),
-(2, 2), 
-(3, 3); 
+(2, 2),
+(3, 3);
 
 -- Kroki przepisu
 INSERT INTO Kroki_przepisu (ID_kroku, ID_przepisu, Tresc_kroku, Kolejnosc) VALUES
@@ -164,5 +164,14 @@ INSERT INTO Jednostki_miary (ID_jednostki, Nazwa_jednostki) VALUES
 
 -- Przelicznik miary
 INSERT INTO Przelicznik_miary (ID_skladnika, ID_jednostki_1, ID_jednostki_2, Proporcja) VALUES
-(1, 1, 3, 1.0), 
-(3, 2, 1, 50.0); 
+(1, 1, 3, 1.0),
+(3, 2, 1, 50.0);
+
+CREATE VIEW widok_skladnikow_uzytkownika AS
+SELECT u.ID_uzytkownika, u.Imie, u.Nazwisko, s.Nazwa_skladnika, sm.Ilosc, m.ID_magazynu
+FROM Uzytkownicy u
+JOIN Magazyn m ON m.ID_uzytkownika = u.ID_uzytkownika
+JOIN Skladniki_w_magazynie sm ON sm.ID_magazynu = m.ID_magazynu
+JOIN Skladniki s ON sm.ID_skladnika = s.ID_skladnika
+WHERE u.ID_uzytkownika = %s;  -- Zamień na odpowiednie ID użytkownika
+
