@@ -94,6 +94,12 @@ class DatabaseManager:
         self.wykonaj_query(f"UPDATE sprzedaz SET status = 'ukonczona' WHERE id_sprzedazy = %s;", (sprzedaz_id,))
         self.wykonaj_query(f"INSERT INTO stan_magazynowy (ilosc, id_produktu) SELECT ilosc, id_produktu FROM sprzedaz_produktu WHERE id_sprzedazy = %s;", (sprzedaz_id,))
 
+    def znajdz_przepisy_z_kategorii(self, id_kategorii: int):
+        return self.fetchall(f"SELECT Przepisy.ID_przepisu, Przepisy.Nazwa_przepisu, Przepisy.Opis, "
+                         f"Przepisy.Czas_przygotowania, Przepisy.ID_uzytkownika FROM Kategorie_przepisow "
+                         f"JOIN Przepisy_kategorie ON Kategorie_przepisow.ID_kategorii = Przepisy_kategorie.ID_kategorii "
+                         f"JOIN Przepisy ON Przepisy_kategorie.ID_przepisu = Przepisy.ID_przepisu "
+                         f"WHERE Kategorie_przepisow.ID_kategorii = %s", (id_kategorii,))
 
     def get_all_recipes(self):
         return self.fetchall(f"SELECT * FROM przepisy", 1)

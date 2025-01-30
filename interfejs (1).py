@@ -89,7 +89,7 @@ def show_menu(databaseManager: DatabaseManager, user: tuple):
         if event == 'Dodaj użytkownika':
             dodaj_uzytkownika(databaseManager)
         if event == 'Otwórz magazyn':
-            przyjecie_dostawy(databaseManager)
+            przyjecie_dostawy(databaseManager, user)
         if event == 'Kalkulator jednostek':
             otworz_kalkulator(databaseManager)
 
@@ -147,19 +147,51 @@ def otworz_kalkulator(databaseManager: DatabaseManager):
 
     window.close()
 
+
+
 def Zobacz_przepisy(databaseManager: DatabaseManager, user):
     przepisy = databaseManager.get_all_recipes()
-    layout = [[sg.Text('Kategorie')], [sg.Button('Wszystkie'), sg.Button('Dania glowne'), sg.Button('Zupy'), sg.Button('Desery')]]
-    for recipe in przepisy:
-        id_przepisu, nazwa, opis, czas, id_użytkownika = recipe
-        layout.append([
-            sg.Button(nazwa, key=str(id_przepisu), size=(20, 1)),  # Przycisk z nazwą przepisu
-            sg.Text(f"{opis} | Czas: {czas} min", size=(100, 1))  # Opis + czas przygotowania
-        ])
+    dania_glowne = databaseManager.znajdz_przepisy_z_kategorii(1)
+    desery = databaseManager.znajdz_przepisy_z_kategorii(2)
+    zupy = databaseManager.znajdz_przepisy_z_kategorii(3)
 
+    # Tworzenie layoutów dla każdej kategorii
+    def generuj_layout(lista_przepisow):
+        layout = []
+        for recipe in lista_przepisow:
+            if len(recipe) != 5:
+                continue
+            id_przepisu, nazwa, opis, czas, id_użytkownika = recipe
+            layout.append([
+                sg.Button(nazwa, key=str(id_przepisu), size=(20, 1)),  # Przycisk z nazwą przepisu
+                sg.Text(f"{opis} | Czas: {czas} min", size=(100, 1))  # Opis + czas przygotowania
+            ])
+        return layout
 
-    layout.append([sg.CloseButton(button_text='Wyjście')])
-    window = stworz_okno('PRZEPISY', layout)
+    layout_wszystkie = generuj_layout(przepisy)
+    layout_dania_glowne = generuj_layout(dania_glowne)
+    layout_zupy = generuj_layout(zupy)
+    layout_desery = generuj_layout(desery)
+
+    # Tworzenie głównego layoutu z kategoriami
+    kategorie_layout = [
+        [sg.Text('Kategorie')],
+        [sg.Button('Wszystkie'), sg.Button('Dania glowne'), sg.Button('Zupy'), sg.Button('Desery')],
+    ]
+
+    # Główne layouty jako ukryte kolumny
+    layout = [
+        kategorie_layout,
+        [sg.Column(layout_wszystkie, key='-Wszystkie-'),
+         sg.Column(layout_dania_glowne, visible=False, key='-Dania glowne-'),
+         sg.Column(layout_zupy, visible=False, key='-Zupy-'),
+         sg.Column(layout_desery, visible=False, key='-Desery-')],
+        [sg.Button('Wyjście')]
+    ]
+
+    window = sg.Window('PRZEPISY', layout, finalize=True)
+
+    aktualny = 'Wszystkie'  # Domyślna kategoria
 
     while True:
         event, _ = window.read()
@@ -170,8 +202,13 @@ def Zobacz_przepisy(databaseManager: DatabaseManager, user):
         if event.isdigit():
             pokaz_kroki(databaseManager, event, user)
 
+        if event in ['Wszystkie', 'Dania glowne', "Zupy", "Desery"]:
+            window[f"-{aktualny}-"].update(visible=False)
+            aktualny = event
+            window[f"-{aktualny}-"].update(visible=True)
 
     window.close()
+
 
 def pokaz_kroki(databaseManager: DatabaseManager, id_przepisu, user):
     kroki_przepisu = databaseManager.otrzymaj_kroki_przepisu(id_przepisu)
