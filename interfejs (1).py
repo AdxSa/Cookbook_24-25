@@ -110,7 +110,7 @@ def otworz_magazyn(databaseManager, user):
         [sg.Button('Wyślij'), sg.Button('Cofnij')]
     ]
 
-    window = stworz_okno('DOSTAWA', layout)
+    window = stworz_okno('OTWÓRZ MAGAZYN', layout)
 
     while True:
         event, values = window.read()
@@ -240,7 +240,7 @@ def Zobacz_przepisy(databaseManager: DatabaseManager, user):
             break
 
         if event.isdigit():
-            pokaz_kroki(databaseManager, event, user)
+            pokaz_kroki(databaseManager, event[0], user)
 
         if event in ['Wszystkie', 'Dania glowne', "Zupy", "Desery"]:
             window[f"-{aktualny}-"].update(visible=False)
