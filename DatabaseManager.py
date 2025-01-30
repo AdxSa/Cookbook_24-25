@@ -133,3 +133,47 @@ class DatabaseManager:
                              f"JOIN jednostki_miary u2 ON p.id_jednostki_2 = u2.id_jednostki "
                              f"WHERE p.id_skladnika = %s AND "
                              f"(u1.nazwa_jednostki = %s AND u2.nazwa_jednostki = %s);", (id_skladnika, nazwa1, nazwa2))
+    #
+    # def znajdz_moje_magazyny(self, id_uzytkownika: int):
+    #     return self.fetchall(f"SELECT ID_magazynu FROM magazyn WHERE ID_uzytkownika = %s;", (id_uzytkownika,))
+    #
+    # def dodaj_magazyn(self, id_uzytkownika: int):
+    #     self.wykonaj_query(f"INSERT INTO Magazyn (ID_uzytkownika) VALUES (%s);", (id_uzytkownika,))
+    #
+    # def czy_mialem_taki_skladnik(self, id_skladnika: int, id_magazynu: int):
+    #     return self.fetchone(f"SELECT * FROM skladniki_w_magazynie WHERE ID_magazynu = %s AND ID_skladnika = %s;",
+    #                          (id_magazynu, id_skladnika))
+    #
+    # def dodaj_skladnik_do_magazynu(self, id_magazynu: int, id_skladnika: int):
+    #     self.wykonaj_query(f"INSERT INTO skladniki_w_magazynie (ID_magazynu, ID_skladnika, Ilosc) VALUES (%s, %s, 0);",
+    #                        (id_magazynu, id_skladnika))
+    #
+    # def zmien_ilosc_skladnika(self, id_magazynu: int, id_skladnika: int, ilosc_do_dodania: float, dodaj: bool):
+    #     quantity = self.fetchone(
+    #         f"SELECT ILOSC FROM skladniki_w_magazynie WHERE ID_magazynu = %s AND ID_skladnika = %s;",
+    #         (id_magazynu, id_skladnika))
+    #     quantity = float(quantity[0])
+    #
+    #     if dodaj:
+    #         quantity += ilosc_do_dodania
+    #     elif quantity - ilosc_do_dodania >= 0:
+    #         quantity -= ilosc_do_dodania
+    #
+    #     self.wykonaj_query(f"UPDATE skladniki_w_magazynie SET ILOSC = %s WHERE ID_magazynu = %s AND ID_skladnika = %s;",
+    #                        (quantity, id_magazynu, id_skladnika))
+    #
+    # def wyswietl_skladniki_uzytkownika(self, id_uzytkownika):
+    #     return self.fetchall(f"SELECT * FROM widok_skladnikow_uzytkownika WHERE ID_uzytkownika = %s", (id_uzytkownika,))
+    #
+    # def dodaj_magazyn(self, user_id):
+    #     query = "INSERT INTO Magazyn (ID_uzytkownika) VALUES (%s);"
+    #     self.wykonaj_query(query, (user_id,))
+    #
+    # def dodaj_przepis(self, nazwa, opis, czas, user_id):
+    #     query = "INSERT INTO Przepisy (Nazwa_przepisu, Opis, Czas_przygotowania, ID_uzytkownika) VALUES (%s, %s, %s, %s) RETURNING ID_przepisu;"
+    #     return self.fetchone(query, (nazwa, opis, czas, user_id))[0]  # Zwraca ID przepisu
+    #
+    # def dodaj_skladnik_do_przepisu(self, przepis_id, skladnik_id):
+    #     query = "INSERT INTO lista_skladnikow (ID_przepisu, ID_skladnika, Ilosc, ID_jednostki) VALUES (%s, %s, %s, %s);"
+    #     # Trzeba dodać ilość i jednostkę, np. 1 i "gram" – w zależności od twoich wymagań
+    #     self.wykonaj_query(query, (przepis_id, skladnik_id, 1, 1))  # Tu warto dodać odpowiednią logikę

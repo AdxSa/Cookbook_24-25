@@ -1,6 +1,5 @@
 import psycopg2
 import decimal as dec
-from tkinter import N
 import PySimpleGUI as sg
 from DatabaseManager import DatabaseManager
 
@@ -32,7 +31,7 @@ def zaloguj():
         if event == 'Zaloguj':
             user = databaseManager.znajdz_uzytkownika(values[0], values[1])
             if(user is None):
-                sg.popup('Błedne dane logowania!')
+                sg.popup('Błędne dane logowania!')
             else:
                 window.close()
                 return show_menu(databaseManager, user)
@@ -75,12 +74,14 @@ def show_menu(databaseManager: DatabaseManager, user: tuple):
         [sg.Button('Kalkulator jednostek')],
         [sg.Button('Zobacz przepisy')],
         [sg.Button('Dodaj przepis')],
+        # [sg.Button('Stwórz magazyn')],  # Przyciski do tworzenia magazynu
+        # [sg.Button('Stwórz przepis')],  # Przycisk do tworzenia przepisu
         [sg.CloseButton(button_text='Wyjście')]
     ]
     if user[3] == 'kierownik':
         layout.append([sg.Button('Dodaj użytkownika')])
 
-    window = stworz_okno('DROGERIA', layout)
+    window = stworz_okno('SMAKOSZE', layout)
     while True:
         event, values = window.read()
         if event in (sg.WIN_CLOSED, 'Wyjście'):
@@ -93,11 +94,139 @@ def show_menu(databaseManager: DatabaseManager, user: tuple):
             przyjecie_dostawy(databaseManager, user)
         if event == 'Kalkulator jednostek':
             otworz_kalkulator(databaseManager)
+        # if event == 'Stwórz magazyn':  # Obsługuje kliknięcie przycisku „Stwórz magazyn”
+        #     stworz_magazyn(databaseManager, user[0])  # user[0] to ID użytkownika
+        # if event == 'Stwórz przepis':  # Obsługuje kliknięcie przycisku „Stwórz przepis”
+        #     stworz_przepis(databaseManager, user[0])  # user[0] to ID użytkownika
         if event == 'Dodaj przepis':
             dodaj_przepis(databaseManager, user)
 
     window.close()
 
+
+# def przyjecie_dostawy(databaseManager, user):
+#     magazyny = databaseManager.znajdz_moje_magazyny(user[0])  # Get user's warehouses
+#
+#     if not magazyny:
+#         sg.popup("Nie masz żadnych magazynów!")
+#         return
+#
+#     magazyny_lista = [str(magazyn[0]) for magazyn in magazyny]
+#     layout = [
+#         [sg.Text('Wybierz numer magazynu')],
+#         [sg.Combo(magazyny_lista, key='MAGAZYN', readonly=True)],
+#         [sg.Button('Wyślij'), sg.Button('Cofnij')]
+#     ]
+#
+#     window = stworz_okno('DOSTAWA', layout)
+#
+#     while True:
+#         event, values = window.read()
+#
+#         if event in (sg.WIN_CLOSED, 'Cofnij'):
+#             break
+#
+#         if event == 'Wyślij':
+#             if 'MAGAZYN' in values:
+#                 id_magazynu = int(values['MAGAZYN'])
+#                 obsluga_magazynu(databaseManager, id_magazynu, user)  # Handle warehouse operations
+#             else:
+#                 sg.popup("Wybierz numer magazynu!")
+#
+#     window.close()
+
+# def obsluga_magazynu(databaseManager, id_magazynu, user):
+#     skladniki = databaseManager.wypisz_skladniki(id_magazynu)
+#     wszystkie_skladniki = databaseManager.wypisz_wszystkie_skladniki()
+#
+#     ilosc_skladnika = dict(skladniki)
+#
+#     layout = []
+#
+#     for id_skladnika, nazwa_skladnika in wszystkie_skladniki:
+#         ilosc = ilosc_skladnika.get(id_skladnika, 0)
+#         layout.append([
+#             sg.Text(f'{nazwa_skladnika}', size=(20, 1)),
+#             sg.Text(str(ilosc), size=(5, 1), key=f'ILOSC_{id_skladnika}'),
+#             sg.Button('+', key=f'PLUS_{id_skladnika}'),
+#             sg.Button('-', key=f'MINUS_{id_skladnika}')
+#         ])
+#
+#     layout.append([sg.Button('Zamknij')])
+#
+#     window = sg.Window('Magazyn Składników', layout)
+#
+#     while True:
+#         event, _ = window.read()
+#
+#         if event in (sg.WINDOW_CLOSED, 'Zamknij'):
+#             break
+#
+#         for id_skladnika, _ in wszystkie_skladniki:
+#             if event == f'PLUS_{id_skladnika}':
+#                 # Handle adding stock
+#                 pass
+#             elif event == f'MINUS_{id_skladnika}':
+#                 # Handle reducing stock
+#                 pass
+#
+#     window.close()
+
+
+# def stworz_magazyn(databaseManager, user_id):
+#     # Pobierz magazyny użytkownika
+#     magazyny = databaseManager.znajdz_moje_magazyny(user_id)
+#
+#     # Sprawdź, czy użytkownik nie ma już maksymalnej liczby magazynów (np. 5)
+#     if len(magazyny) >= 5:
+#         sg.popup("Nie możesz mieć więcej niż 5 magazynów!")
+#         return
+#
+#     # Dodaj nowy magazyn
+#     databaseManager.dodaj_magazyn(user_id)
+#     sg.popup("Magazyn został pomyślnie utworzony!")
+
+# def stworz_przepis(databaseManager, user_id):
+#     # Zbieramy dane na temat przepisu
+#     layout = [
+#         [sg.Text('Podaj dane przepisu')],
+#         [sg.Text('Nazwa przepisu', size=(15, 1)), sg.InputText(key='nazwa')],
+#         [sg.Text('Opis', size=(15, 1)), sg.InputText(key='opis')],
+#         [sg.Text('Czas przygotowania (w minutach)', size=(15, 1)), sg.InputText(key='czas')],
+#         [sg.Text('ID składników (oddzielone przecinkami)', size=(15, 1)), sg.InputText(key='skladniki')],
+#         [sg.Button('Stwórz przepis')]
+#     ]
+#     window = stworz_okno('Tworzenie przepisu', layout)
+#
+#     while True:
+#         event, values = window.read()
+#         if event == sg.WIN_CLOSED:
+#             break
+#         if event == 'Stwórz przepis':
+#             nazwa = values['nazwa']
+#             opis = values['opis']
+#             czas = values['czas']
+#             skladniki = values['skladniki'].split(',')
+#
+#             if not nazwa or not opis or not czas or not skladniki:
+#                 sg.popup("Proszę wprowadzić wszystkie dane!")
+#                 continue
+#
+#             try:
+#                 # Dodaj przepis do bazy danych
+#                 przepis_id = databaseManager.dodaj_przepis(nazwa, opis, czas, user_id)
+#
+#                 # Dodaj składniki do przepisu
+#                 for skladnik_id in skladniki:
+#                     databaseManager.dodaj_skladnik_do_przepisu(przepis_id, skladnik_id.strip())
+#
+#                 sg.popup(f"Przepis '{nazwa}' został pomyślnie dodany!")
+#                 break
+#             except Exception as e:
+#                 sg.popup(f"Coś poszło nie tak: {str(e)}")
+#                 continue
+#
+#     window.close()
 def otworz_kalkulator(databaseManager: DatabaseManager):
     skladniki = databaseManager.wypisz_wszystkie_skladniki()
     print(skladniki)
@@ -289,8 +418,8 @@ def dodaj_przepis(databaseManager: DatabaseManager, user):
             sg.Button('-', key=f'MINUS_{id_skladnika}')
         ])
     layout.append([sg.Text('Wybierz kategorię: ', size=(20, 1))])
-    layout.append([sg.Button('Dania glowne'), 
-                   sg.Button('Zupy'), 
+    layout.append([sg.Button('Dania glowne'),
+                   sg.Button('Zupy'),
                    sg.Button('Desery')])
     layout.append([sg.Text('Nie wybrano kategorii', size=(30, 1), key=f'kategoria')])
     layout.append([sg.Button('Dodaj opis i kroki'), sg.Button('Gotowe'), sg.Button('Anuluj')])
@@ -383,7 +512,7 @@ def dodaj_przepis(databaseManager: DatabaseManager, user):
                             break
                         if event in (sg.WINDOW_CLOSED, 'Anuluj'):
                             break
-                    new_window_4.close() 
+                    new_window_4.close()
                     continue
 
                 if event == 'Przejrzyj kroki':
@@ -477,19 +606,19 @@ def dodaj_uzytkownika(databaseManager: DatabaseManager):
                 sg.popup("Użytkownik o tym loginie już istnieje!", blad)
             except (psycopg2.errors.RaiseException) as blad:
                 sg.popup('Wystąpił błąd!', blad)
-    
+
     window.close()
 
 def obsluga_magazynu(databaseManager, id_magazynu, user):
     skladniki = databaseManager.wypisz_skladniki(id_magazynu)
-    wszystkie_skladniki = databaseManager.wypisz_wszystkie_skladniki()  
+    wszystkie_skladniki = databaseManager.wypisz_wszystkie_skladniki()
 
     ilosc_skladnika = dict(skladniki)
 
     layout = []
 
     for id_skladnika, nazwa_skladnika in wszystkie_skladniki:
-        ilosc = ilosc_skladnika.get(id_skladnika, 0) 
+        ilosc = ilosc_skladnika.get(id_skladnika, 0)
 
         layout.append([
             sg.Text(f'{nazwa_skladnika}', size=(20, 1)),
@@ -555,13 +684,13 @@ def obsluga_magazynu(databaseManager, id_magazynu, user):
                     databaseManager.zmien_ilosc_skladnika(id_magazynu, id_skladnika, values['dodaj'], False)
                     break
                 new_window.close()
-            
+
             ilosc_skladnika = databaseManager.podaj_ilosc_skladnikow(id_magazynu, id_skladnika)
 
             if ilosc_skladnika is None:
-                nowa_ilosc = 0  
+                nowa_ilosc = 0
             else:
-                nowa_ilosc = float(ilosc_skladnika[0])  
+                nowa_ilosc = float(ilosc_skladnika[0])
 
             window[f'ILOSC_{id_skladnika}'].update(str(nowa_ilosc))
 
@@ -583,9 +712,9 @@ def przyjecie_dostawy(databaseManager, user):
         event, values = window.read()
         if event in (sg.WINDOW_CLOSED, 'Cofnij'):
             break
-        
+
         # if event == 'Dodaj magazyn':
-        #     if len(moje_magazyny) < 5:  
+        #     if len(moje_magazyny) < 5:
         #         databaseManager.dodaj_magazyn(user[0])
         #     else:
         #         sg.popup("Masz już maksymalną możliwą liczbę magazynów")
@@ -628,6 +757,6 @@ def sprzedaz(databaseManager: DatabaseManager, user_id: int):
             break
 
     window.close()
-            
+
 if __name__ == "__main__":
     zaloguj()
