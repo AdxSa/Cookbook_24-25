@@ -74,6 +74,7 @@ def show_menu(databaseManager: DatabaseManager, user: tuple):
         [sg.Button('Otwórz magazyn')],
         [sg.Button('Kalkulator jednostek')],
         [sg.Button('Zobacz przepisy')],
+        [sg.Button('Dodaj przepis')],
         [sg.CloseButton(button_text='Wyjście')]
     ]
     if user[3] == 'kierownik':
@@ -92,6 +93,8 @@ def show_menu(databaseManager: DatabaseManager, user: tuple):
             przyjecie_dostawy(databaseManager, user)
         if event == 'Kalkulator jednostek':
             otworz_kalkulator(databaseManager)
+        if event == 'Dodaj przepis':
+            dodaj_przepis(databaseManager, user)
 
     window.close()
 
@@ -268,6 +271,190 @@ def pokaz_kroki(databaseManager: DatabaseManager, id_przepisu, user):
 
     window.close()
 
+def dodaj_przepis(databaseManager: DatabaseManager, user):
+    layout = []
+    skladniki = databaseManager.wypisz_wszystkie_skladniki()
+    lista_skladnikow = dict()
+    kategoria = 0
+    kroki = []
+    nazwa = ''
+    opis = ''
+    layout.append([sg.Text('Nazwa potrawy:', size=(15, 1)), sg.InputText(key='opis', size=(30, 1))])
+    for id_skladnika, nazwa_skladnika in skladniki:
+        lista_skladnikow[f'{id_skladnika}'] = 0
+        layout.append([
+            sg.Text(f'{nazwa_skladnika}: ', size=(20, 1)),
+            sg.Text(str(0), size=(5, 1), key=f'ILOSC_{id_skladnika}'),
+            sg.Button('+', key=f'PLUS_{id_skladnika}'),
+            sg.Button('-', key=f'MINUS_{id_skladnika}')
+        ])
+    layout.append([sg.Text('Wybierz kategorię: ', size=(20, 1))])
+    layout.append([sg.Button('Dania glowne'), 
+                   sg.Button('Zupy'), 
+                   sg.Button('Desery')])
+    layout.append([sg.Text('Nie wybrano kategorii', size=(30, 1), key=f'kategoria')])
+    layout.append([sg.Button('Dodaj opis i kroki'), sg.Button('Gotowe'), sg.Button('Anuluj')])
+
+    window = sg.Window('Nowy przepis', layout)
+
+    while True:
+        event, _ = window.read()
+
+        if event in (sg.WINDOW_CLOSED, 'Gotowe'):
+            if nazwa == '':
+                sg.popup("Przepis musi mieć nazwę")
+                continue
+            else:
+                break
+
+        if event in (sg.WINDOW_CLOSED, 'Anuluj'):
+            break
+
+        if event == 'Dania glowne':
+            if kategoria == 1:
+                window["kategoria"].update(f"Nie wybrano kategorii")
+                kategoria = 0
+            else:
+                kategoria = 1
+                window["kategoria"].update(f"Wybrano kategorię: {event}")
+
+        if event == 'Desery':
+            if kategoria == 2:
+                window["kategoria"].update(f"Nie wybrano kategorii")
+                kategoria = 0
+            else:
+                kategoria = 2
+                window["kategoria"].update(f"Wybrano kategorię: {event}")
+
+        if event == 'Zupy':
+            if kategoria == 3:
+                window["kategoria"].update(f"Nie wybrano kategorii")
+                kategoria = 0
+            else:
+                kategoria = 3
+                window["kategoria"].update(f"Wybrano kategorię: {event}")
+
+        if event == 'Dodaj opis i kroki':
+            layout_3 = [
+        [sg.Button('Dodaj opis'),
+        sg.Button('Dodaj krok'), sg.Button('Przejrzyj kroki')],
+        [sg.Button('Zapisz i wróć')]
+            ]
+
+            new_window_2 = stworz_okno('Opis przepisu', layout_3)
+
+            while True:
+                event, values = new_window_2.read()
+
+                if event in (sg.WINDOW_CLOSED, 'Zapisz i wróć'):
+                    break
+
+                if event == 'Dodaj opis':
+                    layout_6 = [
+    [sg.Text('Opis:', size=(15, 1))], [sg.InputText(key='opis', size=(30, 1))],
+    [sg.Button('Dodaj'), sg.Button('Anuluj')]
+        ]
+                    new_window_6 = stworz_okno('Opis przepisu', layout_6)
+
+                    while True:
+                        event, values = new_window_6.read()
+
+                        if event in (sg.WINDOW_CLOSED, 'Dodaj'):
+                            opis = str(values['opis'])
+                            break
+
+                        if event in (sg.WINDOW_CLOSED, 'Anuluj'):
+                            break
+                    new_window_6.close()
+                    continue
+
+                if event == 'Dodaj krok':
+                    layout_4 = [
+    [sg.Text('Tekst kroku:', size=(15, 1))], [sg.InputText(key='krok', size=(30, 2))],
+    [sg.Button('Dodaj'), sg.Button('Anuluj')]
+        ]
+                    new_window_4 = stworz_okno('Dodaj krok', layout_4)
+
+                    while True:
+                        event, values = new_window_4.read()
+
+                        if event in (sg.WINDOW_CLOSED, 'Dodaj'):
+                            kroki.append(values['krok'])
+                            break
+                        if event in (sg.WINDOW_CLOSED, 'Anuluj'):
+                            break
+                    new_window_4.close() 
+                    continue
+
+                if event == 'Przejrzyj kroki':
+                    if len(kroki) == 0:
+                        continue
+                    else:
+                        layout_5 = []
+                        layout_5.append([sg.Text(f"{opis}")])
+                        for i in range(len(kroki)):
+                            layout_5.append([sg.Text(f"{i + 1}. {kroki[i]}")])
+                        layout_5.append([sg.Button('Wróć')])
+
+                        new_window_5 = stworz_okno("Kroki", layout_5)
+
+                        while True:
+                            event, values = new_window_5.read()
+
+                            if event in (sg.WINDOW_CLOSED, 'Wróć'):
+                                break
+                        new_window_5.close()
+                        continue
+            new_window_2.close()
+
+        for id_skladnika, nazwa_skladnika in skladniki:
+            if event == f'PLUS_{id_skladnika}':
+
+                layout_2 = [
+        [sg.Text('Ilość do dodania:', size=(15, 1)), sg.InputText(key='dodaj')],
+        [sg.Button('Dodaj')]
+    ]
+                new_window = stworz_okno('Dodawanie składników', layout_2)
+                while True:
+                    event, values = new_window.read()
+
+                    if event in (sg.WINDOW_CLOSED, 'Dodaj'):
+                        values['dodaj'] = float(values['dodaj'])
+                        if values['dodaj'] < 0:
+                            sg.popup(f'Jesteś w oknie dodawania produktów')
+                            break
+                        # można wywoływać jakieś exception itd
+                        lista_skladnikow[f'{id_skladnika}'] += values['dodaj']
+                        break
+                new_window.close()
+
+            elif event == f'MINUS_{id_skladnika}':
+                layout_2 = [
+            [sg.Text('Ilość do odjęcia:', size=(15, 1)), sg.InputText(key='dodaj')],
+            [sg.Button('Odejmij')]
+        ]
+                new_window = stworz_okno('Odejmowanie składników', layout_2)
+                while True:
+                    event, values = new_window.read()
+
+                    if event in (sg.WINDOW_CLOSED, 'Odejmij'):
+                        values['dodaj'] = float(values['dodaj'])
+                        if values['dodaj'] < 0:
+                            sg.popup(f'Jesteś w oknie odejmowania produktów, podaj liczbę dodatnią')
+                            break
+                        # można wywoływać jakieś exception itd
+                        aktualna_ilosc = lista_skladnikow[f'{id_skladnika}']
+                    if aktualna_ilosc + values['dodaj'] < 0:
+                        lista_skladnikow[f'{id_skladnika}'] = 0
+                    else:
+                        lista_skladnikow[f'{id_skladnika}'] -= values['dodaj']
+                    break
+                new_window.close()
+
+            window[f'ILOSC_{id_skladnika}'].update(str(lista_skladnikow[f'{id_skladnika}']))
+
+    window.close()
+
 def dodaj_uzytkownika(databaseManager: DatabaseManager):
     layout = [
         [sg.Text('Dodaj użytkownika')],
@@ -386,7 +573,7 @@ def przyjecie_dostawy(databaseManager, user):
     # moje_magazyny = databaseManager.znajdz_moje_magazyny(user[0])
     # print(moje_magazyny)
     layout = [
-        # [sg.Text('Moje magazyny: ', size=(15, 1)), sg.Button('Dodaj magazyn')],
+        # [sg.Text('Moje magazyny: ', size=(15, 1)), sg.Text(f"{moje_magazyny}"), sg.Button('Dodaj magazyn')],
         [sg.Text('Numer magazynu:', size=(15, 1)), sg.InputText(key='MAGAZYN')],
         [sg.Button('Wyślij'), sg.Button('Cofnij')]
     ]
@@ -398,9 +585,7 @@ def przyjecie_dostawy(databaseManager, user):
             break
         
         # if event == 'Dodaj magazyn':
-        #     if databaseManager.znajdz_moje_magazyny(user[0]) == []:
-        #         databaseManager.dodaj_magazyn(user[0])
-        #     if len(databaseManager.znajdz_moje_magazyny(user[0])) < 5:
+        #     if len(moje_magazyny) < 5:  
         #         databaseManager.dodaj_magazyn(user[0])
         #     else:
         #         sg.popup("Masz już maksymalną możliwą liczbę magazynów")

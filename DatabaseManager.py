@@ -66,7 +66,10 @@ class DatabaseManager:
         self.wykonaj_query(f"INSERT INTO skladniki_w_magazynie (ID_magazynu, ID_skladnika, Ilosc) VALUES (%s, %s, 0);", (id_magazynu, id_skladnika))
 
     def dodaj_magazyn(self, id_uzytkownika: int):
-        self.wykonaj_query(f"INSERT INTO Magazyn (ID_uzytkownika) VALUES (%s)", (id_uzytkownika, ))
+        self.wykonaj_query(f"INSERT INTO Magazyn (ID_uzytkownika) VALUES (%s);", (id_uzytkownika, ))
+
+    def dodaj_przepis(self, nazwa, opis, czas, id_uzytkownika):
+        self.wykonaj_query(f"INSERT INTO Przepisy (Nazwa_przepisu, Opis, Czas_przygotowania, ID_uzytkownika) VALUES VALUES (%s, %s, %s, %s);", (nazwa, opis, czas, id_uzytkownika, ))
 
     def czy_mialem_taki_skladnik(self, id_skladnika: int, id_magazynu: int):
         return self.fetchone(f"SELECT * FROM skladniki_w_magazynie WHERE ID_magazynu = %s AND ID_skladnika = %s", (id_magazynu, id_skladnika))
