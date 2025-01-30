@@ -696,7 +696,65 @@ def obsluga_magazynu(databaseManager, id_magazynu, user):
 
     window.close()
 
+### DODAWANIE MAGAZYNU, SPRAWDŹ
+def stworz_magazyn(databaseManager, user_id):
+    # Pobierz magazyny użytkownika
+    magazyny = databaseManager.znajdz_moje_magazyny(user_id)
 
+    # Sprawdź, czy użytkownik nie ma już maksymalnej liczby magazynów (np. 5)
+    if len(magazyny) >= 5:
+        sg.popup("Nie możesz mieć więcej niż 5 magazynów!")
+        return
+
+    # Dodaj nowy magazyn
+    databaseManager.dodaj_magazyn(user_id)
+    sg.popup("Magazyn został pomyślnie utworzony!")
+
+### DODAWANIE PRZEPISU, ALTERNATYWA DO MOJEGO
+def stworz_przepis(databaseManager, user_id):
+    # Zbieramy dane na temat przepisu
+    layout = [
+        [sg.Text('Podaj dane przepisu')],
+        [sg.Text('Nazwa przepisu', size=(15, 1)), sg.InputText(key='nazwa')],
+        [sg.Text('Opis', size=(15, 1)), sg.InputText(key='opis')],
+        [sg.Text('Czas przygotowania (w minutach)', size=(15, 1)), sg.InputText(key='czas')],
+        [sg.Text('ID składników (oddzielone przecinkami)', size=(15, 1)), sg.InputText(key='skladniki')],
+        [sg.Button('Stwórz przepis')]
+    ]
+    window = stworz_okno('Tworzenie przepisu', layout)
+
+    while True:
+        event, values = window.read()
+        if event == sg.WIN_CLOSED:
+            break
+        if event == 'Stwórz przepis':
+            nazwa = values['nazwa']
+            opis = values['opis']
+            czas = values['czas']
+            skladniki = values['skladniki'].split(',')
+
+            if not nazwa or not opis or not czas or not skladniki:
+                sg.popup("Proszę wprowadzić wszystkie dane!")
+                continue
+            
+            try:
+                # Dodaj przepis do bazy danych
+                przepis_id = databaseManager.dodaj_przepis(nazwa, opis, czas, user_id)
+
+                # Dodaj składniki do przepisu
+                for skladnik_id in skladniki:
+                    databaseManager.dodaj_skladnik_do_przepisu(przepis_id, skladnik_id.strip())
+
+                sg.popup(f"Przepis '{nazwa}' został pomyślnie dodany!")
+                break
+            except Exception as e:
+                sg.popup(f"Coś poszło nie tak: {str(e)}")
+                continue
+
+    window.close()
+
+
+###
 
 def przyjecie_dostawy(databaseManager, user):
     # moje_magazyny = databaseManager.znajdz_moje_magazyny(user[0])
