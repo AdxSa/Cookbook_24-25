@@ -355,7 +355,7 @@ def dodaj_przepis(databaseManager: DatabaseManager, user):
     kroki = []
     nazwa = ''
     opis = ''
-    layout.append([sg.Text('Nazwa potrawy:', size=(15, 1)), sg.InputText(key='opis', size=(30, 1))])
+    layout.append([sg.Text('Nazwa potrawy:', size=(15, 1)), sg.InputText(key='nazwa_potrawy', size=(30, 1))])
     for id_skladnika, nazwa_skladnika in skladniki:
         lista_skladnikow[f'{id_skladnika}'] = 0
         layout.append([
@@ -374,10 +374,11 @@ def dodaj_przepis(databaseManager: DatabaseManager, user):
     window = sg.Window('Nowy przepis', layout)
 
     while True:
-        event, _ = window.read()
+        event, values = window.read()
         if event == sg.WINDOW_CLOSED:
             break
         if event == 'Gotowe':
+            nazwa = values["nazwa_potrawy"]
             if nazwa == '':
                 sg.popup("Przepis musi mieć nazwę")
                 continue
