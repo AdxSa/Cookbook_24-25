@@ -294,8 +294,9 @@ def pokaz_kroki(databaseManager: DatabaseManager, id_przepisu, user):
 
                 print("Stan magazynu przed:")
                 print(databaseManager.wypisz_skladniki(magazyn[0]))
-                for skladnik in skladniki_list:
-                    databaseManager.zmien_ilosc_skladnika(magazyn[0], skladnik[0], skladnik[1], False)
+                if czy_starczy:
+                    for skladnik in skladniki_list:
+                        databaseManager.zmien_ilosc_skladnika(magazyn[0], skladnik[0], skladnik[1], False)
                 print("Stan magazynu po:")
                 print(databaseManager.wypisz_skladniki(magazyn[0]))
 
@@ -374,15 +375,26 @@ def dodaj_przepis(databaseManager: DatabaseManager, user):
 
     while True:
         event, _ = window.read()
-
-        if event in (sg.WINDOW_CLOSED, 'Gotowe'):
+        if event == sg.WINDOW_CLOSED:
+            break
+        if event == 'Gotowe':
             if nazwa == '':
                 sg.popup("Przepis musi mieć nazwę")
                 continue
             else:
+                # opis - przepisy.opis
+                # nazwa = nazwa_przepisu
+                # kategoria = id_kategorii
+                # lista_skladnikow = dict zawierający jako klucze id_skladnika i wartości ilość skladnika
+                # kroki = lista z treściami kroków tzn. kroki_przepisu.tresc_kroku w kolejnosci takiej jak na liscie
+                # user[0]= id_uzytkownika tworzącego przepis
+                ###tutaj komenda sql która wstawia przepis z tymi danymi do bazy danych
+                databaseManager.wstaw_przepis
+
                 break
 
-        if event in (sg.WINDOW_CLOSED, 'Anuluj'):
+        if event == 'Anuluj':
+            window.close()
             break
 
         if event == 'Dania glowne':
@@ -420,8 +432,11 @@ def dodaj_przepis(databaseManager: DatabaseManager, user):
 
             while True:
                 event, values = new_window_2.read()
+                if event == sg.WINDOW_CLOSED:
+                    new_window_2.close()
+                    break
 
-                if event in (sg.WINDOW_CLOSED, 'Zapisz i wróć'):
+                if event == 'Zapisz i wróć':
                     break
 
                 if event == 'Dodaj opis':
@@ -433,12 +448,14 @@ def dodaj_przepis(databaseManager: DatabaseManager, user):
 
                     while True:
                         event, values = new_window_6.read()
-
-                        if event in (sg.WINDOW_CLOSED, 'Dodaj'):
+                        if event == sg.WINDOW_CLOSED:
+                            new_window_6.close()
+                            break
+                        if event == 'Dodaj':
                             opis = str(values['opis'])
                             break
 
-                        if event in (sg.WINDOW_CLOSED, 'Anuluj'):
+                        if event == 'Anuluj':
                             break
                     new_window_6.close()
                     continue
@@ -452,16 +469,19 @@ def dodaj_przepis(databaseManager: DatabaseManager, user):
 
                     while True:
                         event, values = new_window_4.read()
-
-                        if event in (sg.WINDOW_CLOSED, 'Dodaj'):
+                        if event == sg.WINDOW_CLOSED:
+                            new_window_4.close()
+                            break
+                        if event == 'Dodaj':
                             kroki.append(values['krok'])
                             break
-                        if event in (sg.WINDOW_CLOSED, 'Anuluj'):
+                        if event == 'Anuluj':
                             break
                     new_window_4.close()
                     continue
 
                 if event == 'Przejrzyj kroki':
+                    print(kroki)
                     if len(kroki) == 0:
                         continue
                     else:
@@ -492,14 +512,17 @@ def dodaj_przepis(databaseManager: DatabaseManager, user):
                 new_window = stworz_okno('Dodawanie składników', layout_2)
                 while True:
                     event, values = new_window.read()
-
-                    if event in (sg.WINDOW_CLOSED, 'Dodaj'):
+                    if event == sg.WINDOW_CLOSED:
+                        new_window.close()
+                        break
+                    if event == 'Dodaj':
                         values['dodaj'] = float(values['dodaj'])
                         if values['dodaj'] < 0:
                             sg.popup(f'Jesteś w oknie dodawania produktów')
                             break
                         # można wywoływać jakieś exception itd
                         lista_skladnikow[f'{id_skladnika}'] += values['dodaj']
+                        # lista_skladnikow to dict
                         break
                 new_window.close()
 
@@ -511,8 +534,10 @@ def dodaj_przepis(databaseManager: DatabaseManager, user):
                 new_window = stworz_okno('Odejmowanie składników', layout_2)
                 while True:
                     event, values = new_window.read()
-
-                    if event in (sg.WINDOW_CLOSED, 'Odejmij'):
+                    if event == sg.WINDOW_CLOSED:
+                        new_window.close()
+                        break
+                    if event == 'Odejmij':
                         values['dodaj'] = float(values['dodaj'])
                         if values['dodaj'] < 0:
                             sg.popup(f'Jesteś w oknie odejmowania produktów, podaj liczbę dodatnią')
