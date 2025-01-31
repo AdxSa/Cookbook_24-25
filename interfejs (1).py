@@ -272,33 +272,87 @@ def pokaz_kroki(databaseManager: DatabaseManager, id_przepisu, user):
 
 
         if event in (sg.WIN_CLOSED, 'Odejmij składniki'):
-            str_list = []
-            skladniki_list = [(int(skladnik[0]), float(skladnik[1])) for skladnik in skladniki]
-            # dodać przeliczanie na jednostki domyślne
-            print(skladniki_list)
+            new_layout = []
             magazyny = databaseManager.znajdz_moje_magazyny(user[0])
-            for magazyn in magazyny:
-                stan_magazynu = databaseManager.wypisz_skladniki(magazyn[0])
-                stan_magazynu = [(int(skladnik[0]), float(skladnik[1])) for skladnik in stan_magazynu]
-                magazyn_dict = dict(stan_magazynu)
+            if not magazyny:
+                sg.popup("Nie masz żadnych magazynów!")
+                continue
 
-                czy_starczy = True
+            magazyny_lista = [str(magazyn[0]) for magazyn in magazyny]
+            layout_2 = [
+                [sg.Text('Wybierz numer magazynu')],
+                [sg.Combo(magazyny_lista, key='MAGAZYN', readonly=True)],
+                [sg.Button('Wybierz'), sg.Button('Cofnij')]
+            ]
 
-                for id_skladnika, ilosc_w_przepisie in skladniki_list:
-                    ilosc_w_magazynie = magazyn_dict.get(id_skladnika, 0)  # Jeśli brak w magazynie, domyślnie 0
+            window_2 = stworz_okno('Wybor magazynu', layout_2)
+            while True:
+                event, values = window_2.read()
 
-                    if ilosc_w_magazynie < ilosc_w_przepisie:
-                        czy_starczy = False
-                        str_list.append(str(f"Brak wystarczającej ilości składnika {str(databaseManager.dopasuj_skladnik_do_id(id_skladnika)[0])}: {ilosc_w_magazynie}/{ilosc_w_przepisie}n"))
-                        sg.popup(f"Brak wystarczającej ilości składnika {str(databaseManager.dopasuj_skladnik_do_id(id_skladnika)[0])}: {ilosc_w_magazynie}/{ilosc_w_przepisie}")
+                if event in (sg.WIN_CLOSED, 'Cofnij'):
+                    break
 
-                print("Stan magazynu przed:")
-                print(databaseManager.wypisz_skladniki(magazyn[0]))
-                if czy_starczy:
-                    for skladnik in skladniki_list:
-                        databaseManager.zmien_ilosc_skladnika(magazyn[0], skladnik[0], skladnik[1], False)
-                print("Stan magazynu po:")
-                print(databaseManager.wypisz_skladniki(magazyn[0]))
+                if event == 'Wybierz':
+                    if 'MAGAZYN' in values:
+                        id_magazynu = int(values['MAGAZYN'])
+                        str_list = []
+                        skladniki_list = [(int(skladnik[0]), float(skladnik[1])) for skladnik in skladniki]
+                        # dodać przeliczanie na jednostki domyślne
+                        # print(skladniki_list)
+                        stan_magazynu = databaseManager.wypisz_skladniki(id_magazynu)
+                        stan_magazynu = [(int(skladnik[0]), float(skladnik[1])) for skladnik in stan_magazynu]
+                        magazyn_dict = dict(stan_magazynu)
+
+                        czy_starczy = True
+
+                        for id_skladnika, ilosc_w_przepisie in skladniki_list:
+                            ilosc_w_magazynie = magazyn_dict.get(id_skladnika, 0)  # Jeśli brak w magazynie, domyślnie 0
+
+                            if ilosc_w_magazynie < ilosc_w_przepisie:
+                                czy_starczy = False
+                                str_list.append(str(f"Brak wystarczającej ilości składnika {str(databaseManager.dopasuj_skladnik_do_id(id_skladnika)[0])}: {ilosc_w_magazynie}/{ilosc_w_przepisie}n"))
+                                sg.popup(f"Brak wystarczającej ilości składnika {str(databaseManager.dopasuj_skladnik_do_id(id_skladnika)[0])}: {ilosc_w_magazynie}/{ilosc_w_przepisie}")
+
+                        print("Stan magazynu przed:")
+                        print(databaseManager.wypisz_skladniki(id_magazynu))
+                        if czy_starczy:
+                            for skladnik in skladniki_list:
+                                databaseManager.zmien_ilosc_skladnika(id_magazynu, skladnik[0], skladnik[1], False)
+                        print("Stan magazynu po:")
+                        print(databaseManager.wypisz_skladniki(id_magazynu))
+                    else:
+                        sg.popup("Wybierz numer magazynu!")
+
+            window_2.close()
+
+
+            # str_list = []
+            # skladniki_list = [(int(skladnik[0]), float(skladnik[1])) for skladnik in skladniki]
+            # # dodać przeliczanie na jednostki domyślne
+            # # print(skladniki_list)
+            # magazyny = databaseManager.znajdz_moje_magazyny(user[0])
+            # for magazyn in magazyny:
+            #     stan_magazynu = databaseManager.wypisz_skladniki(magazyn[0])
+            #     stan_magazynu = [(int(skladnik[0]), float(skladnik[1])) for skladnik in stan_magazynu]
+            #     magazyn_dict = dict(stan_magazynu)
+
+            #     czy_starczy = True
+
+            #     for id_skladnika, ilosc_w_przepisie in skladniki_list:
+            #         ilosc_w_magazynie = magazyn_dict.get(id_skladnika, 0)  # Jeśli brak w magazynie, domyślnie 0
+
+            #         if ilosc_w_magazynie < ilosc_w_przepisie:
+            #             czy_starczy = False
+            #             str_list.append(str(f"Brak wystarczającej ilości składnika {str(databaseManager.dopasuj_skladnik_do_id(id_skladnika)[0])}: {ilosc_w_magazynie}/{ilosc_w_przepisie}n"))
+            #             sg.popup(f"Brak wystarczającej ilości składnika {str(databaseManager.dopasuj_skladnik_do_id(id_skladnika)[0])}: {ilosc_w_magazynie}/{ilosc_w_przepisie}")
+
+            #     print("Stan magazynu przed:")
+            #     print(databaseManager.wypisz_skladniki(magazyn[0]))
+            #     if czy_starczy:
+            #         for skladnik in skladniki_list:
+            #             databaseManager.zmien_ilosc_skladnika(magazyn[0], skladnik[0], skladnik[1], False)
+            #     print("Stan magazynu po:")
+            #     print(databaseManager.wypisz_skladniki(magazyn[0]))
 
 
 
