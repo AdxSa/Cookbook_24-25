@@ -9,7 +9,7 @@ CREATE TABLE Uzytkownicy (
 
 -- Tworzenie tabeli przepisów
 CREATE TABLE Przepisy (
-    ID_przepisu INTEGER PRIMARY KEY,
+    ID_przepisu INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     Nazwa_przepisu VARCHAR(255) NOT NULL UNIQUE,
     Opis TEXT,
     Czas_przygotowania INTEGER,
@@ -103,10 +103,10 @@ INSERT INTO Uzytkownicy (Imie, Nazwisko, Haslo, Email) VALUES
 ('Piotr', 'Wisniewski', 'mojeHaslo', 'piotr.wisniewski@example.com');
 
 -- Przepisy
-INSERT INTO Przepisy (ID_przepisu, Nazwa_przepisu, Opis, Czas_przygotowania, ID_uzytkownika) VALUES
-(1, 'Spaghetti Carbonara', 'Tradycyjne wloskie danie z makaronem i sosem jajecznym.', 20, 1),
-(2, 'Tiramisu', 'Deser na bazie mascarpone, biszkoptow i kawy.', 30, 2),
-(3, 'Zupa pomidorowa', 'Klasyczna zupa na bazie pomidorow i warzyw.', 15, 3);
+INSERT INTO Przepisy (Nazwa_przepisu, Opis, Czas_przygotowania, ID_uzytkownika) VALUES
+('Spaghetti Carbonara', 'Tradycyjne wloskie danie z makaronem i sosem jajecznym.', 20, 1),
+('Tiramisu', 'Deser na bazie mascarpone, biszkoptow i kawy.', 30, 2),
+('Zupa pomidorowa', 'Klasyczna zupa na bazie pomidorow i warzyw.', 15, 3);
 
 -- Skladniki
 INSERT INTO Skladniki (ID_skladnika, Nazwa_skladnika, Typ, Opis_skladnika) VALUES

@@ -21,6 +21,22 @@ class DatabaseManager:
             with con.cursor() as curs:
                 curs.execute(query, arguments)
 
+    def wstaw_przepis(self, nazwa:str, opis:str, czas:int, id_uzytkownika:int):
+        return self.fetchone(f"INSERT INTO przepisy (Nazwa_przepisu, Opis, Czas_przygotowania, ID_uzytkownika) VALUES (%s, %s, %s, %s) RETURNING ID_przepisu;", (nazwa, opis, czas, id_uzytkownika))
+
+    def przypisz_kategorie(self, id_przepisu:int, id_kategorii:int):
+        return self.wykonaj_query(f"INSERT INTO przepisy_kategorie (ID_przepisu, ID_kategorii) VALUES (%s, %s)", (id_przepisu, id_kategorii))
+
+    def dodaj_wiele_skladnikow(self, skladniki:dict, id_przepisu:int, id_jednostki:int):
+        try:
+            for skladnik_id, ilosc in skladniki:
+                self.wykonaj_query(f"INSERT INTO lista_skladnikow (ID_przepisu, ID_skladnika, Ilosc) VALUES (%s, %s, %s);", (id_przepisu, skladnik_id, ilosc, id_jednostki))
+        except:
+            return
+    def dodaj_kroki_przepisu(self, kroki:list, id_przepisu):
+        for kolejny in range(len(kroki)):
+            self.wykonaj_query(f"INSERT INTO kroki_przepisu (ID_przepisu, Kolejnosc, Tresc_kroku) VALUES (%s, %s, %s);", (id_przepisu, kolejny, kroki[kolejny]))
+
     def znajdz_uzytkownika(self, email: str, haslo: str):
         return self.fetchone(f"SELECT * FROM uzytkownicy WHERE email=%s AND haslo LIKE %s;", (email, haslo))
     def dodaj_uzytkownika(self, imie: str, nazwisko: str, email: str, haslo: str):
@@ -95,3 +111,6 @@ class DatabaseManager:
         query = "INSERT INTO lista_skladnikow (ID_przepisu, ID_skladnika, Ilosc, ID_jednostki) VALUES (%s, %s, %s, %s);"
         # Trzeba dodać ilość i jednostkę, np. 1 i "gram" – w zależności od twoich wymagań
         self.wykonaj_query(query, (przepis_id, skladnik_id, 1, 1))  # Tu warto dodać odpowiednią logikę
+
+    def wszystkie_nazwy_przepisow(self):
+        return self.fetchall(f"SELECT nazwa_przepisu FROM przepisy", (1, ))

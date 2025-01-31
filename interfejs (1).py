@@ -240,7 +240,7 @@ def Zobacz_przepisy(databaseManager: DatabaseManager, user):
             break
 
         if event.isdigit():
-            pokaz_kroki(databaseManager, event[0], user)
+            pokaz_kroki(databaseManager, event[0: len(event)], user)
 
         if event in ['Wszystkie', 'Dania glowne', "Zupy", "Desery"]:
             window[f"-{aktualny}-"].update(visible=False)
@@ -409,7 +409,7 @@ def dodaj_przepis(databaseManager: DatabaseManager, user):
     kroki = []
     nazwa = ''
     opis = ''
-    layout.append([sg.Text('Nazwa potrawy:', size=(15, 1)), sg.InputText(key='nazwa_potrawy', size=(30, 1))])
+    layout.append([sg.Text('Nazwa potrawy:', size=(15, 1)), sg.InputText(key='opis', size=(30, 1))])
     for id_skladnika, nazwa_skladnika in skladniki:
         lista_skladnikow[f'{id_skladnika}'] = 0
         layout.append([
@@ -432,11 +432,19 @@ def dodaj_przepis(databaseManager: DatabaseManager, user):
         if event == sg.WINDOW_CLOSED:
             break
         if event == 'Gotowe':
-            nazwa = values["nazwa_potrawy"]
+            nazwa = values['opis']
             if nazwa == '':
                 sg.popup("Przepis musi mieć nazwę")
                 continue
+            elif kategoria == 0:
+                sg.popup("Wybierz kategorię przepisu")
+                continue
+            elif (f"{nazwa}",) in databaseManager.wszystkie_nazwy_przepisow():
+                sg.popup("Przepis o takiej nazwie już istnieje, wybierz inną nazwę dla twojego dzieła")
+                continue
             else:
+                czas = 0
+                id_jednostki = 1
                 # opis - przepisy.opis
                 # nazwa = nazwa_przepisu
                 # kategoria = id_kategorii
@@ -444,7 +452,11 @@ def dodaj_przepis(databaseManager: DatabaseManager, user):
                 # kroki = lista z treściami kroków tzn. kroki_przepisu.tresc_kroku w kolejnosci takiej jak na liscie
                 # user[0]= id_uzytkownika tworzącego przepis
                 ###tutaj komenda sql która wstawia przepis z tymi danymi do bazy danych
-                databaseManager.wstaw_przepis
+                id_przepisu = databaseManager.wstaw_przepis(nazwa, opis, czas, user[0])[0]
+                databaseManager.przypisz_kategorie(id_przepisu, kategoria)
+                databaseManager.dodaj_wiele_skladnikow(lista_skladnikow, id_przepisu, id_jednostki)
+                databaseManager.dodaj_kroki_przepisu(kroki, id_przepisu)
+                sg.popup(f"Przepis {nazwa} został pomyślnie dodany do bazy!")
 
                 break
 
@@ -536,7 +548,6 @@ def dodaj_przepis(databaseManager: DatabaseManager, user):
                     continue
 
                 if event == 'Przejrzyj kroki':
-                    print(kroki)
                     if len(kroki) == 0:
                         continue
                     else:
