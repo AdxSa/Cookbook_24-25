@@ -140,7 +140,6 @@ def stworz_magazyn(databaseManager, user_id):
     sg.popup("Magazyn został pomyślnie utworzony!")
 def otworz_kalkulator(databaseManager: DatabaseManager):
     skladniki = databaseManager.wypisz_wszystkie_skladniki()
-    print(skladniki)
     skladniki_dict = {str(id): nazwa for id, nazwa in skladniki}
     layout = [
         [sg.Text('Wybierz składnik'), sg.Combo(list(skladniki_dict.values()), key="SKŁADNIK", enable_events=True)],
@@ -240,7 +239,10 @@ def Zobacz_przepisy(databaseManager: DatabaseManager, user):
             break
 
         if event.isdigit():
-            pokaz_kroki(databaseManager, event[0: len(event)], user)
+            if aktualny == 'Wszystkie':
+                pokaz_kroki(databaseManager, event, user)
+            else:
+                pokaz_kroki(databaseManager, event[:-1], user)
 
         if event in ['Wszystkie', 'Dania glowne', "Zupy", "Desery"]:
             window[f"-{aktualny}-"].update(visible=False)
@@ -313,13 +315,13 @@ def pokaz_kroki(databaseManager: DatabaseManager, id_przepisu, user):
                                 str_list.append(str(f"Brak wystarczającej ilości składnika {str(databaseManager.dopasuj_skladnik_do_id(id_skladnika)[0])}: {ilosc_w_magazynie}/{ilosc_w_przepisie}n"))
                                 sg.popup(f"Brak wystarczającej ilości składnika {str(databaseManager.dopasuj_skladnik_do_id(id_skladnika)[0])}: {ilosc_w_magazynie}/{ilosc_w_przepisie}")
 
-                        print("Stan magazynu przed:")
-                        print(databaseManager.wypisz_skladniki(id_magazynu))
+                        # print("Stan magazynu przed:")
+                        # print(databaseManager.wypisz_skladniki(id_magazynu))
                         if czy_starczy:
                             for skladnik in skladniki_list:
                                 databaseManager.zmien_ilosc_skladnika(id_magazynu, skladnik[0], skladnik[1], False)
-                        print("Stan magazynu po:")
-                        print(databaseManager.wypisz_skladniki(id_magazynu))
+                        # print("Stan magazynu po:")
+                        # print(databaseManager.wypisz_skladniki(id_magazynu))
                     else:
                         sg.popup("Wybierz numer magazynu!")
 
@@ -407,16 +409,21 @@ def dodaj_przepis(databaseManager: DatabaseManager, user):
     lista_skladnikow = dict()
     kategoria = 0
     kroki = []
-    nazwa = ''
     opis = ''
-    layout.append([sg.Text('Nazwa potrawy:', size=(15, 1)), sg.InputText(key='opis', size=(30, 1))])
+    layout.append([sg.Text('Nazwa potrawy:', size=(15, 1)), sg.InputText(key='nazwa', size=(30, 1))])
+    layout.append([sg.Text('Czas przygotowania (min):', size=(25, 1)), sg.InputText(key='czas', size=(5, 1))])
     for id_skladnika, nazwa_skladnika in skladniki:
         lista_skladnikow[f'{id_skladnika}'] = 0
+        jednostki_dla_skladnika = databaseManager.wypisz_jednostki_dla_skladnika(id_skladnika)
+        if not jednostki_dla_skladnika:
+            jednostki_dla_skladnika=['Brak jednostek']
+
         layout.append([
             sg.Text(f'{nazwa_skladnika}: ', size=(20, 1)),
             sg.Text(str(0), size=(5, 1), key=f'ILOSC_{id_skladnika}'),
             sg.Button('+', key=f'PLUS_{id_skladnika}'),
-            sg.Button('-', key=f'MINUS_{id_skladnika}')
+            sg.Button('-', key=f'MINUS_{id_skladnika}'),
+            sg.Combo(jednostki_dla_skladnika, default_value=jednostki_dla_skladnika[0],key=f'JEDNOSTKA_{id_skladnika}')
         ])
     layout.append([sg.Text('Wybierz kategorię: ', size=(20, 1))])
     layout.append([sg.Button('Dania glowne'),
@@ -432,19 +439,25 @@ def dodaj_przepis(databaseManager: DatabaseManager, user):
         if event == sg.WINDOW_CLOSED:
             break
         if event == 'Gotowe':
-            nazwa = values['opis']
+            nazwa = values['nazwa']
+            czas = values['czas']
             if nazwa == '':
                 sg.popup("Przepis musi mieć nazwę")
                 continue
             elif kategoria == 0:
                 sg.popup("Wybierz kategorię przepisu")
                 continue
+            elif not czas.isdigit():
+                sg.popup("Czas przygotowania musi być liczbą całkowitą!")
+                continue
             elif (f"{nazwa}",) in databaseManager.wszystkie_nazwy_przepisow():
                 sg.popup("Przepis o takiej nazwie już istnieje, wybierz inną nazwę dla twojego dzieła")
                 continue
             else:
-                czas = 0
-                id_jednostki = 1
+                jednostki_dla_skladnikow = {f"{id_skladnika}": values[f'JEDNOSTKA_{id_skladnika}'] for id_skladnika, _ in
+                                            skladniki}
+                jednostki_dla_skladnikow = databaseManager.zamien_nazwy_jedn_na_id_dict(jednostki_dla_skladnikow)
+                czas = int(czas)
                 # opis - przepisy.opis
                 # nazwa = nazwa_przepisu
                 # kategoria = id_kategorii
@@ -454,7 +467,7 @@ def dodaj_przepis(databaseManager: DatabaseManager, user):
                 ###tutaj komenda sql która wstawia przepis z tymi danymi do bazy danych
                 id_przepisu = databaseManager.wstaw_przepis(nazwa, opis, czas, user[0])[0]
                 databaseManager.przypisz_kategorie(id_przepisu, kategoria)
-                databaseManager.dodaj_wiele_skladnikow(lista_skladnikow, id_przepisu, id_jednostki)
+                databaseManager.dodaj_wiele_skladnikow(lista_skladnikow, id_przepisu, jednostki_dla_skladnikow)
                 databaseManager.dodaj_kroki_przepisu(kroki, id_przepisu)
                 sg.popup(f"Przepis {nazwa} został pomyślnie dodany do bazy!")
 

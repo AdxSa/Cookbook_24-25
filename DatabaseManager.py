@@ -27,12 +27,10 @@ class DatabaseManager:
     def przypisz_kategorie(self, id_przepisu:int, id_kategorii:int):
         return self.wykonaj_query(f"INSERT INTO przepisy_kategorie (ID_przepisu, ID_kategorii) VALUES (%s, %s)", (id_przepisu, id_kategorii))
 
-    def dodaj_wiele_skladnikow(self, skladniki:dict, id_przepisu:int, id_jednostki:int):
-        try:
-            for skladnik_id, ilosc in skladniki:
-                self.wykonaj_query(f"INSERT INTO lista_skladnikow (ID_przepisu, ID_skladnika, Ilosc) VALUES (%s, %s, %s);", (id_przepisu, skladnik_id, ilosc, id_jednostki))
-        except:
-            return
+    def dodaj_wiele_skladnikow(self, skladniki:dict, id_przepisu:int, jednostki_dla_skladnikow:dict):
+        for skladnik_id in skladniki.keys():
+            if skladniki[skladnik_id] > 0:
+                self.wykonaj_query(f"INSERT INTO lista_skladnikow (ID_przepisu, ID_skladnika, Ilosc, id_jednostki) VALUES (%s, %s, %s, %s);", (id_przepisu, skladnik_id, skladniki[skladnik_id], jednostki_dla_skladnikow[skladnik_id]))
     def dodaj_kroki_przepisu(self, kroki:list, id_przepisu):
         for kolejny in range(len(kroki)):
             self.wykonaj_query(f"INSERT INTO kroki_przepisu (ID_przepisu, Kolejnosc, Tresc_kroku) VALUES (%s, %s, %s);", (id_przepisu, kolejny, kroki[kolejny]))
@@ -97,6 +95,13 @@ class DatabaseManager:
             jednostki.add(i)
             jednostki.add(j)
         return list(jednostki)
+
+    def zamien_nazwy_jedn_na_id_dict(self, sklad:dict):
+        new = dict()
+        for i in sklad.keys():
+            new[i] = self.fetchone(f"SELECT id_jednostki FROM jednostki_miary WHERE nazwa_jednostki = %s", (sklad[i], ))
+        return new
+
     def znajdz_przelicznik_jednostek(self, id_skladnika:int, nazwa1 :int, nazwa2:int):
         return self.fetchone(f"SELECT proporcja FROM przelicznik_miary p "
                              f"JOIN jednostki_miary u1 ON p.id_jednostki_1 = u1.id_jednostki "

@@ -116,7 +116,7 @@ INSERT INTO Skladniki (ID_skladnika, Nazwa_skladnika, Typ, Opis_skladnika) VALUE
 (4, 'Pomidor', 'Warzywo', 'Podstawowy skladnik wielu zup i salatek.');
 
 -- Magazyn
-INSERT INTO Magazyn (ID_magazynu, ID_uzytkownika) VALUES
+INSERT INTO Magazyn (ID_uzytkownika) VALUES
 (1),
 (2),
 (3);
@@ -157,10 +157,11 @@ INSERT INTO Kroki_przepisu (ID_kroku, ID_przepisu, Tresc_kroku, Kolejnosc) VALUE
 (6, 3, 'Zalej woda i gotuj przez 10 minut.', 3);
 
 -- Jednostki miary
-INSERT INTO Jednostki_miary (ID_jednostki, Nazwa_jednostki) VALUES
+INSERT INTO Jednostki_miary (id_jednostki, Nazwa_jednostki) VALUES
 (1, 'gram'),
 (2, 'sztuka'),
-(3, 'mililitr');
+(3, 'mililitr')
+(99999, 'Brak jednostki');
 
 -- Przelicznik miary
 INSERT INTO Przelicznik_miary (ID_skladnika, ID_jednostki_1, ID_jednostki_2, Proporcja) VALUES
